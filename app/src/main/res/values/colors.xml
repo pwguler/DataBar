@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="w_label">#6B5FA8</color>
+    <color name="w_number">#1E1633</color>
+    <color name="w_secondary">#6B5FA8</color>
+    <color name="w_bar">#8B7BE8</color>
+    <color name="w_bar_today">#1E1633</color>
+</resources>

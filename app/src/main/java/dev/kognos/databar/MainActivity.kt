@@ -2,127 +2,355 @@ package dev.kognos.databar
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
-import android.net.Uri
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
-import android.text.InputType
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
+import android.view.Window
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
-import android.widget.Toast
 
 class MainActivity : Activity() {
 
-    private lateinit var status: TextView
-    private lateinit var dayInput: EditText
-    private lateinit var wifiBox: CheckBox
+    private val bg = Color.parseColor("#0F0F12")
+    private val surface = Color.parseColor("#17171B")
+    private val ink = Color.parseColor("#FFFFFF")
+    private val muted = Color.parseColor("#9AA0A6")
+    private val dim = Color.parseColor("#71767C")
+    private val divider = Color.parseColor("#1FFFFFFF")
+    private val barIdle = Color.parseColor("#33333B")
+    private val accent = Color.parseColor("#7FB4FF")
+    private val trackColor = Color.parseColor("#26262E")
+
+
+    private lateinit var heroNumber: TextView
+    private lateinit var todayLine: TextView
+    private lateinit var chart: ImageView
+    private lateinit var accessValue: TextView
+    private lateinit var appsDate: TextView
+    private lateinit var appsList: android.widget.ListView
+    private lateinit var appsAdapter: AppAdapter
+
+    private var lastDaily: List<UsageRepo.Day> = emptyList()
+    private var selected: Int = -1
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun text(s: String, size: Float, color: Int, bold: Boolean = false): TextView =
+        TextView(this).apply {
+            text = s
+            textSize = size
+            setTextColor(color)
+            if (bold) setTypeface(typeface, Typeface.BOLD)
+            includeFontPadding = false
+        }
+
+    private fun dividers(): View = View(this).apply {
+        setBackgroundColor(divider)
+        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1)
+    }
+
+    private fun row(label: String, right: View?): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), 0, dp(16), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(52)
+            )
+            addView(text(label, 15f, ink), LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+            ))
+            if (right != null) addView(right)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+        window.decorView.systemUiVisibility = 0
 
-        val pad = (16 * resources.displayMetrics.density).toInt()
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
-        root.setPadding(pad, pad, pad, pad)
+        root.setBackgroundColor(bg)
+        root.setPadding(dp(20), dp(32), dp(20), dp(28))
 
-        val title = TextView(this)
-        title.text = "DataBar"
-        title.textSize = 22f
-        root.addView(title)
+        root.addView(text("DataBar", 28f, ink, true))
 
-        status = TextView(this)
-        status.setPadding(0, pad / 2, 0, pad)
-        root.addView(status)
+        val headRow = LinearLayout(this)
+        headRow.orientation = LinearLayout.HORIZONTAL
+        headRow.gravity = Gravity.CENTER_VERTICAL
 
-        val grant = Button(this)
-        grant.text = "Aktifkan izin Usage access"
-        grant.setOnClickListener {
+        val headLeft = LinearLayout(this)
+        headLeft.orientation = LinearLayout.VERTICAL
+
+        heroNumber = text("—", 42f, ink, false).apply {
+            fontFeatureSettings = "tnum"
+            setPadding(0, dp(4), 0, 0)
+        }
+        heroNumber.setOnClickListener {
+            if (lastDaily.isNotEmpty()) selectDay(lastDaily.size - 1)
+        }
+        headLeft.addView(heroNumber)
+        todayLine = text("", 13f, muted).apply { setPadding(0, dp(8), 0, 0) }
+        headLeft.addView(todayLine)
+
+        headRow.addView(headLeft, LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+        ))
+        root.addView(headRow, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(14) })
+
+
+        chart = ImageView(this)
+        chart.scaleType = ImageView.ScaleType.FIT_XY
+        chart.setOnTouchListener { v, e ->
+            if (e.action == android.view.MotionEvent.ACTION_UP && lastDaily.isNotEmpty()) {
+                val n = lastDaily.size
+                val idx = ((e.x / v.width.toFloat()) * n).toInt().coerceIn(0, n - 1)
+                selectDay(idx)
+            }
+            true
+        }
+        root.addView(chart, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(104)
+        ).apply { topMargin = dp(14) })
+
+        val gap = View(this)
+        root.addView(gap, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(24)))
+
+        val card = LinearLayout(this)
+        card.orientation = LinearLayout.VERTICAL
+        card.background = GradientDrawable().apply {
+            cornerRadius = dp(24).toFloat()
+            setColor(surface)
+        }
+
+        val wifiSwitch = Switch(this)
+        wifiSwitch.isChecked = UsageRepo.includeWifi(this)
+        wifiSwitch.thumbTintList = ColorStateList.valueOf(bg)
+        wifiSwitch.trackTintList = ColorStateList.valueOf(ink)
+        wifiSwitch.setOnCheckedChangeListener { _, checked ->
+            UsageRepo.prefs(this).edit().putBoolean(UsageRepo.KEY_WIFI, checked).apply()
+            selected = -1
+            refresh()
+            DataBarWidget.refreshAll(this)
+        }
+        card.addView(row("Include Wi-Fi", wifiSwitch))
+        card.addView(dividers())
+
+        accessValue = text("", 15f, muted)
+        val accessRow = row("Usage access", accessValue)
+        accessRow.setOnClickListener {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
-        root.addView(grant)
+        card.addView(accessRow)
+        root.addView(card)
 
-        val dayLabel = TextView(this)
-        dayLabel.text = "Tanggal mulai siklus tagihan (1-28):"
-        dayLabel.setPadding(0, pad, 0, pad / 2)
-        root.addView(dayLabel)
+        appsDate = text("", 13f, dim).apply { setPadding(0, dp(26), 0, 0) }
+        root.addView(appsDate)
 
-        dayInput = EditText(this)
-        dayInput.inputType = InputType.TYPE_CLASS_NUMBER
-        dayInput.setText(UsageRepo.cycleDay(this).toString())
-        root.addView(dayInput)
+        val listGap = View(this)
+        root.addView(listGap, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(8)))
 
-        wifiBox = CheckBox(this)
-        wifiBox.text = "Ikut hitung Wi-Fi"
-        wifiBox.isChecked = UsageRepo.includeWifi(this)
-        root.addView(wifiBox)
-
-        val save = Button(this)
-        save.text = "Simpan & perbarui widget"
-        save.setOnClickListener { saveAndRefresh() }
-        root.addView(save)
-
-        val reload = Button(this)
-        reload.text = "Muat ulang"
-        reload.setOnClickListener {
-            dayInput.setText(UsageRepo.cycleDay(this).toString())
-            wifiBox.isChecked = UsageRepo.includeWifi(this)
-            updateStatus()
-        }
-        root.addView(reload)
-
-        val hint = TextView(this)
-        hint.text = "Widget: long-press home screen > Widgets > DataBar. " +
-                "Angka dihitung di HP dari NetworkStatsManager; app ini tidak punya izin internet."
-        hint.textSize = 12f
-        hint.setTextColor(Color.GRAY)
-        hint.setPadding(0, pad, 0, 0)
-        root.addView(hint)
-
-        val scroll = ScrollView(this)
-        scroll.addView(root, ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        appsAdapter = AppAdapter()
+        appsList = android.widget.ListView(this)
+        appsList.divider = null
+        appsList.dividerHeight = 0
+        appsList.isVerticalScrollBarEnabled = false
+        appsList.adapter = appsAdapter
+        root.addView(appsList, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
         ))
-        setContentView(scroll)
-        updateStatus()
+
+        setContentView(root, ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        refresh()
     }
 
     override fun onResume() {
         super.onResume()
-        updateStatus()
+        refresh()
         DataBarWidget.refreshAll(this)
     }
 
-    private fun updateStatus() {
+    private fun refresh() {
         val ok = UsageRepo.hasUsageAccess(this)
-        status.text = if (ok) {
-            val now = System.currentTimeMillis()
-            val start = UsageRepo.cycleStart(now, UsageRepo.cycleDay(this))
-            val mtd = UsageRepo.totalBytes(this, start, now, UsageRepo.includeWifi(this))
-            "Izin: AKTIF · pemakaian siklus ini: " + UsageRepo.fmt(mtd)
-        } else {
-            "Izin: BELUM ADA — widget tidak bisa membaca pemakaian data"
-        }
-        status.setTextColor(if (ok) Color.parseColor("#2E7D32") else Color.parseColor("#C62828"))
-    }
+        accessValue.text = if (ok) "Granted" else "Needed"
+        accessValue.setTextColor(if (ok) muted else Color.parseColor("#F2A0A0"))
 
-    private fun saveAndRefresh() {
-        val v = dayInput.text.toString().trim().toIntOrNull()
-        if (v == null || v < 1 || v > 28) {
-            Toast.makeText(this, "Isi 1-28", Toast.LENGTH_SHORT).show()
+        if (!ok) {
+            heroNumber.text = "—"
+            todayLine.text = "grant Usage access below"
+            chart.setImageBitmap(null)
+            appsDate.text = ""
+            appsAdapter.submit(emptyList())
             return
         }
-        UsageRepo.prefs(this).edit()
-            .putInt(UsageRepo.KEY_CYCLE_DAY, v)
-            .putBoolean(UsageRepo.KEY_WIFI, wifiBox.isChecked)
-            .apply()
-        updateStatus()
-        DataBarWidget.refreshAll(this)
-        Toast.makeText(this, "Disimpan: siklus tgl $v", Toast.LENGTH_SHORT).show()
+
+        val wifi = UsageRepo.includeWifi(this)
+        val daily = UsageRepo.dailyLast(this, UsageRepo.BARS, wifi)
+        lastDaily = daily
+
+        if (selected !in daily.indices) selected = daily.size - 1
+
+        val total = daily.sumOf { it.bytes }
+        val today = daily.lastOrNull()?.bytes ?: 0L
+        val avg = total / daily.size.coerceAtLeast(1)
+
+        heroNumber.text = UsageRepo.fmt(total)
+        todayLine.text = "today " + UsageRepo.fmt(today) + "  ·  avg " + UsageRepo.fmt(avg) + " / day"
+
+        drawChart(daily)
+        renderApps(daily, selected)
     }
+
+    private fun drawChart(daily: List<UsageRepo.Day>) {
+        chart.setImageBitmap(
+            BarChart.draw(
+                daily.map { it.bytes },
+                dp(320), dp(104),
+                colorBar = barIdle,
+                colorToday = ink,
+                barRatio = 0.56f,
+                highlightIndex = selected
+            )
+        )
+    }
+
+    private fun selectDay(idx: Int) {
+        if (idx !in lastDaily.indices) return
+        selected = idx
+        drawChart(lastDaily)
+        renderApps(lastDaily, idx)
+    }
+
+    private fun renderApps(daily: List<UsageRepo.Day>, idx: Int) {
+        if (idx !in daily.indices) return
+        val day = daily[idx]
+        val fmtDate = java.text.SimpleDateFormat("EEE, d MMM", java.util.Locale.ENGLISH)
+            .format(java.util.Date(day.start))
+        appsDate.text = if (idx == daily.size - 1) "Apps · today" else "Apps · $fmtDate"
+
+        val wifi = UsageRepo.includeWifi(this)
+        val apps = UsageRepo.perApp(
+            this, day.start, day.start + 24L * 60 * 60 * 1000, wifi
+        )
+        val days = daily.size.coerceAtLeast(1)
+        val spanStart = daily.first().start
+        val totals = UsageRepo.perAppTotals(
+            this, spanStart, System.currentTimeMillis(), wifi
+        )
+        val dayMax = apps.maxOfOrNull { it.bytes }?.coerceAtLeast(1L) ?: 1L
+        appsAdapter.submit(apps.map { a ->
+            val tot = totals[a.uid]
+            val avgRx = (tot?.rx ?: a.rx) / days
+            val avgTx = (tot?.tx ?: a.tx) / days
+            Row(
+                a.label, a.pkg,
+                UsageRepo.fmt(a.rx), UsageRepo.fmt(a.tx),
+                UsageRepo.fmt(avgRx), UsageRepo.fmt(avgTx),
+                (a.bytes.toFloat() / dayMax.toFloat())
+            )
+        })
+    }
+    private data class Row(
+        val label: String,
+        val pkg: String?,
+        val down: String,
+        val up: String,
+        val avgDown: String,
+        val avgUp: String,
+        val share: Float
+    )
+
+    private val iconCache = HashMap<String, android.graphics.drawable.Drawable?>()
+
+    private fun iconFor(pkg: String?): android.graphics.drawable.Drawable? {
+        if (pkg == null) return null
+        if (iconCache.containsKey(pkg)) return iconCache[pkg]
+        val dr = try {
+            packageManager.getApplicationIcon(pkg)
+        } catch (t: Throwable) {
+            null
+        }
+        iconCache[pkg] = dr
+        return dr
+    }
+
+    private inner class AppAdapter : android.widget.BaseAdapter() {
+        private var items: List<Row> = emptyList()
+
+        fun submit(next: List<Row>) {
+            items = next
+            notifyDataSetChanged()
+        }
+
+        override fun getCount(): Int = items.size
+        override fun getItem(position: Int): Any = items[position]
+        override fun getItemId(position: Int): Long = position.toLong()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+            val it0 = items[position]
+
+            val wrap = LinearLayout(this@MainActivity)
+            wrap.orientation = LinearLayout.VERTICAL
+            wrap.setPadding(0, dp(9), 0, dp(9))
+
+            val row = LinearLayout(this@MainActivity)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+
+            val icon = ImageView(this@MainActivity)
+            icon.scaleType = ImageView.ScaleType.FIT_XY
+            row.addView(icon, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
+                marginEnd = dp(12)
+            })
+            val dr = iconFor(it0.pkg)
+            if (dr != null) icon.setImageDrawable(dr) else icon.setImageBitmap(null)
+
+            row.addView(text(it0.label, 15f, ink), LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+            ))
+
+            val right = LinearLayout(this@MainActivity)
+            right.orientation = LinearLayout.VERTICAL
+            right.gravity = Gravity.END
+            val top = text("\u2193 " + it0.down + "   \u2191 " + it0.up, 12f, ink)
+            top.gravity = Gravity.END
+            val bottom = text("avg \u2193 " + it0.avgDown + "  \u2191 " + it0.avgUp, 11f, muted)
+            bottom.gravity = Gravity.END
+            bottom.setPadding(0, dp(2), 0, 0)
+            right.addView(top)
+            right.addView(bottom)
+            row.addView(right)
+            wrap.addView(row)
+
+            val share = it0.share.coerceIn(0f, 1f)
+            val bar = LinearLayout(this@MainActivity)
+            bar.orientation = LinearLayout.HORIZONTAL
+            val fill = View(this@MainActivity)
+            fill.setBackgroundColor(accent)
+            val rest = View(this@MainActivity)
+            rest.setBackgroundColor(trackColor)
+            bar.addView(fill, LinearLayout.LayoutParams(0, dp(3), share.coerceAtLeast(0.001f)))
+            bar.addView(rest, LinearLayout.LayoutParams(0, dp(3), (1f - share).coerceAtLeast(0.001f)))
+            wrap.addView(bar, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(3)
+            ).apply { topMargin = dp(7) })
+            return wrap
+        }
+    }
+
 }
