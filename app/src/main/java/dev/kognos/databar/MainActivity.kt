@@ -135,6 +135,7 @@ class MainActivity : Activity() {
         wifiSwitch.trackDrawable = getDrawable(R.drawable.switch_track)
         wifiSwitch.thumbTintList = null
         wifiSwitch.trackTintList = null
+        wifiSwitch.switchMinWidth = dp(40)
         wifiSwitch.isChecked = UsageRepo.includeWifi(this)
         wifiSwitch.setOnCheckedChangeListener { _, checked ->
             UsageRepo.prefs(this).edit().putBoolean(UsageRepo.KEY_WIFI, checked).apply()
@@ -162,7 +163,7 @@ class MainActivity : Activity() {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(30) })
 
-        // Chips are 48dp tall to tap; the pill drawn inside is 30dp, so 9dp of each margin is the inset.
+        // Chips are 48dp tall to tap; the pill drawn inside is 30dp, so each neighbor's margin gives back the 9dp inset.
         val chips = LinearLayout(this)
         chips.orientation = LinearLayout.HORIZONTAL
         chipFlag = chip("Highlight", 0)
@@ -184,7 +185,7 @@ class MainActivity : Activity() {
         appsList.adapter = appsAdapter
         root.addView(appsList, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
-        ))
+        ).apply { topMargin = -dp(3) })
 
         setContentView(root, ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
