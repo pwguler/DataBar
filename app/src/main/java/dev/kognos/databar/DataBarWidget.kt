@@ -79,9 +79,8 @@ class DataBarWidget : AppWidgetProvider() {
             val today = values.size - 1
             val on = Color.WHITE
             val off = Color.TRANSPARENT
-            views.setImageViewBitmap(R.id.ivUnlit, DotMatrix.draw(values, w, h, density, today, unlit = on, dot = off, ink = off))
-            views.setImageViewBitmap(R.id.ivDots, DotMatrix.draw(values, w, h, density, today, unlit = off, dot = on, ink = off))
-            views.setImageViewBitmap(R.id.ivToday, DotMatrix.draw(values, w, h, density, today, unlit = off, dot = off, ink = on))
+            views.setImageViewBitmap(R.id.ivDots, Bars.draw(values, w, h, today, bar = on, accent = off))
+            views.setImageViewBitmap(R.id.ivToday, Bars.draw(values, w, h, today, bar = off, accent = on))
             return views
         }
     }

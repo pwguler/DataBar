@@ -240,12 +240,10 @@ class MainActivity : Activity() {
             return
         }
         chart.setImageBitmap(
-            DotMatrix.draw(
-                daily.map { it.bytes }, chart.width, chart.height, resources.displayMetrics.density,
-                selected,
-                unlit = getColor(R.color.dot_unlit),
-                dot = getColor(R.color.dot),
-                ink = ink
+            Bars.draw(
+                daily.map { it.bytes }, chart.width, chart.height, selected,
+                bar = getColor(R.color.dot),
+                accent = ink
             )
         )
     }
