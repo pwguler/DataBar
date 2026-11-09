@@ -1,76 +1,72 @@
 # DataBar design
 
-The Instrument panel look: black and white like a measuring instrument, numbers set in dot matrix, and one red signal for anything that needs attention. The reference is the widget style of Nothing OS. Nothing publishes no design tokens, so the colors below are chosen for this app and checked for contrast.
+DataBar looks like a Samsung app. The phone's theme is the source: on a Samsung phone `Theme.DeviceDefault.DayNight` is One UI, so the system font, the text colors, the accent color and the switch come from the device and follow its light/dark setting and color palette. DataBar adds only what One UI leaves to each app: neutral backgrounds for the screen and its blocks, the bar colors, and one red for attention.
 
-App screen, home-screen widget and launcher icon use the same tokens. Every color has a light and a dark value and follows the system dark-mode setting.
+## Sources
+
+- Samsung's One UI design guide: content in blocks with large rounded corners (26dp), side margins of at least 24dp, an expanded app bar of 39.67% of the screen height on phones, and the primary blue `#0381FE`.
+- The screen and block neutrals come from the color images of that guide (light `#FCFCFC`, dark `#010101`).
+- Android's widget guide: `Theme.DeviceDefault.DayNight` on the widget root for the device colors, `@android:id/background` for the launch transition, and `system_app_widget_background_radius` on Android 12+.
 
 ## Typography
 
-| Role | Font | Size | Tracking | Case | Color |
-|---|---|---|---|---|---|
-| Title | Space Mono Bold | 12sp | 0.16em | upper | `ink` |
-| Total | Doto, `wght` 900, `ROND` 100 | 84sp | -0.01em | as is | `ink` |
-| Total unit | Space Mono | 14sp | 0 | as is | `ink_secondary` |
-| Summary line | Space Mono | 11sp | 0.08em | upper | `ink_secondary` |
-| Section label | Space Mono | 11sp | 0.14em | upper | `ink_secondary` |
-| Chip | Space Mono | 11sp | 0.10em | upper | `ink_secondary`; selected: `background` on `ink` |
-| Settings label | Space Grotesk | 15sp | 0 | as is | `ink` |
-| Settings value | Space Mono | 11sp | 0.10em | upper | `ink_secondary`; `signal` when access is missing |
-| App name | Space Grotesk | 16sp | 0 | as is | `ink` |
-| App traffic line | Space Mono | 12sp | 0 | as is | `ink` |
-| App baseline line | Space Mono | 11sp | 0 | as is | `ink_secondary`; `signal` when flagged |
+The system font, nothing bundled. Text colors are theme attributes.
 
-The total sits on the same baseline as its unit, 10dp apart. Doto draws only the digits and the decimal comma.
+| Role | Size | Weight | Color |
+|---|---|---|---|
+| Header label "DataBar" | 15sp | regular | `textColorSecondary` |
+| Total | 48sp | bold | `textColorPrimary` |
+| Total unit | 22sp | bold | `textColorSecondary` |
+| Summary line | 14sp | regular | `textColorSecondary` |
+| Block title ("Watch · today") | 16sp | bold | `textColorPrimary` |
+| Settings label | 16sp | regular | `textColorPrimary` |
+| Settings value | 14sp | regular | `textColorSecondary`; `signal` when access is missing |
+| Chip | 13sp | bold | `textColorSecondary`; selected: `colorAccent` |
+| App name | 16sp | regular | `textColorPrimary` |
+| App traffic line | 13sp | regular | `textColorPrimary` |
+| App baseline line | 12sp | regular | `textColorSecondary`; `signal` when flagged |
 
-Fonts, all under the SIL Open Font License from Google Fonts: Doto by Óliver Lalan, Space Grotesk by Florian Karsten, Space Mono by Colophon Foundry. They ship inside the APK with their license texts.
+Rows have minimum heights, not fixed ones, so they grow with the phone's font size.
 
 ## Color
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `background` | `#FFFFFF` | `#000000` | screen |
-| `surface` | `#F2F2F2` | `#141414` | settings card |
-| `ink` | `#000000` | `#FFFFFF` | primary text, the selected day, share bars, "on" states |
-| `ink_secondary` | `#5C5C5C` | `#8A8A8A` | secondary text, switch when off |
-| `rule` | `#E3E3E3` | `#262626` | dividers, chip outline, share bar track |
-| `dot` | `#8A8A8A` | `#5C5C5C` | lit dots of the days |
-| `dot_unlit` | `#EFEFEF` | `#171717` | unlit dots of the matrix |
-| `signal` | `#D71920` | `#FF4545` | flagged apps, missing Usage access |
-| `widget_background` | `#FFFFFF` | `#000000` | widget tile |
+| `background` | `#F2F2F2` | `#010101` | screen, status and navigation bars |
+| `block` | `#FCFCFC` | `#171717` | content blocks, widget tile |
+| `bar` | `#8F8F8F` | `#6B6B6B` | bars of the days |
+| `rule` | `#E6E6E6` | `#262626` | dividers, outline of unselected chips |
+| `track` | `#EBEBEB` | `#2A2A2A` | track of the share bars |
+| `signal` | `#E60F40` | `#F22C59` | flagged apps, missing Usage access |
 
-`ink` marks the data of the selected day and "on" states. `signal` marks only what needs attention, and nothing else is red.
+From the theme: `textColorPrimary`, `textColorSecondary` and `colorAccent`. The accent marks the selected day: its bar, the share bars of its apps, the selected chip. The switch takes the accent on its own. `signal` marks only what needs attention.
 
-Contrast (WCAG 2), light / dark: `ink_secondary` on `background` 6.69 / 6.08, on `surface` 5.97 / 5.34; `signal` on `background` 5.19 / 6.19; `dot` on `background` 3.45 / 3.14.
+Contrast (WCAG 2), light / dark: `bar` on `block` 3.15 / 3.36; `signal` on `block` 4.54 / 4.51.
 
-## Spacing
+## Layout
 
 All values in dp.
 
-- Screen padding: 30 top and bottom, 20 at the sides.
-- Title to total 30, total to summary line 16, summary line to chart 26, chart to settings card 26, card to section label 30, section label to chips 12, chips to app list 6.
-- Settings rows: 52 tall, 18 side padding, 1dp `rule` between rows.
-- App rows: 14 above, 12 below, 28 icon with 12 to the name, share bar 10 below the text.
-- Touch targets are at least 48 tall: chips have a 48 tap area around the drawn pill, and the whole Wi-Fi row toggles the switch.
+- Header: the top 39.67% of the screen height. "DataBar", the total with its unit on one baseline, and the summary line, centered, 14 apart.
+- Blocks: 12 from the screen edges and 12 apart, corner radius 26, padding 20; the settings block has 4 above and below its rows. 24 below the last block.
+- Settings rows: at least 56 tall, a 1dp `rule` between them. Tapping anywhere on the Wi-Fi row toggles the switch.
+- Apps block: the title, the chips 14 below it, then the rows. Chips are 30 tall pills with 14 side padding, 8 apart, inside a 48 tall tap area. Selected chips are filled with the accent at 16% opacity; the others have a 1dp `rule` outline.
+- App rows: at least 12 above and below, a 28 icon, 12 to the name, and a 4 tall rounded share bar 10 below the text.
+- The whole screen scrolls, the header with it.
 
-## Shape
+## Bars
 
-- Settings card: corner radius 20.
-- Chips: pill, 13 side padding, 30 tall; 1dp `rule` outline, selected chips filled with `ink`, 8 apart.
-- Switch: 40 × 22 pill. Off: 1.5dp `ink_secondary` outline, 12dp `ink_secondary` thumb on the left. On: filled `ink`, 12dp `background` thumb on the right.
-- Widget tile: corner radius 24, padding 14.
+The 30-day chart in the app and the widget is a row of pill bars.
 
-## Dot matrix
+- One bar per day, oldest on the left. The pitch is the width divided by 30, and a bar is half the pitch wide with fully round ends.
+- A day with no traffic has no bar. Any other day has at least a round dot, as tall as the bar is wide; the largest day fills the height, the others in proportion.
+- Days are `bar`, the selected day is `colorAccent`.
+- The app chart is 112 tall and is drawn at the size of its view.
 
-The 30-day chart in the app and the widget is a dot matrix.
+## Widget
 
-- One column per day, oldest on the left. Pitch is the width divided by 30, but never more than the height, so at least one row fits; rows are the height divided by the pitch, rounded down. Dot diameter is 0.62 × pitch.
-- A day with no traffic lights no dot. Any other day lights at least one dot and at most every row: the largest day lights every row, the others in proportion, rounded.
-- Lit dots are `dot`, the selected day's lit dots are `ink`, unlit dots are `dot_unlit`.
-- When the pitch is under 6dp, as in the 2x1 widget, the dots grow to 0.8 × pitch and unlit dots are left out.
-- The app chart is 132dp tall. It is drawn at the size of its view, so dots stay round.
-
-Share bars in the app list use the same language: 3dp dots every 6dp, the track in `rule`, the share in `ink`, or `signal` for a flagged app.
+A tile in `block` with the system widget corner radius on Android 12+ and 26 before, padding 16. The widget root uses `Theme.DeviceDefault.DayNight`, so today's bar takes the device accent. The bars follow "Bars"; today is the selected day.
 
 ## Icon
 
-Adaptive icon on a 108dp canvas: `#000000` background, three columns of white dots at x 38, 54 and 70 with 3, 4 and 6 dots, radius 3.6, pitch 9, bottom row at y 76. The top dot of the tallest column is `#D71920`. The monochrome layer has the same dots, all white.
+Adaptive icon on a 108dp canvas: `#0381FE` background, three white pill bars 11 wide at x 33, 48.5 and 64, 21, 32 and 44 tall, standing on y 76. The monochrome layer has the same bars.
