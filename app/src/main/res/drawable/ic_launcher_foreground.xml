@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- DESIGN.md, "Icon": three dot columns, the top dot of the tallest one in signal red. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M31,64 h10 a3,3 0 0 1 3,3 v13 h-16 v-13 a3,3 0 0 1 3,-3 z"/>
-    <path android:fillColor="#FFFFFF" android:pathData="M51,50 h10 a3,3 0 0 1 3,3 v27 h-16 v-27 a3,3 0 0 1 3,-3 z"/>
-    <path android:fillColor="#8B8F96" android:pathData="M71,36 h10 a3,3 0 0 1 3,3 v41 h-16 v-41 a3,3 0 0 1 3,-3 z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M34.4,76 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M34.4,67 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M34.4,58 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,76 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,67 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,58 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,49 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,76 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,67 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,58 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,49 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,40 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z"/>
+    <path android:fillColor="#D71920" android:pathData="M66.4,31 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z"/>
 </vector>
