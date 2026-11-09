@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Switch is twice the thumb wide: a 20 x 22dp thumb gives the 40dp track, the 12dp dot 4dp from its end. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <inset android:insetLeft="4dp" android:insetRight="4dp" android:insetTop="5dp" android:insetBottom="5dp">
+            <shape android:shape="oval">
+                <size android:width="12dp" android:height="12dp" />
+                <solid android:color="@color/background" />
+            </shape>
+        </inset>
+    </item>
+    <item>
+        <inset android:insetLeft="4dp" android:insetRight="4dp" android:insetTop="5dp" android:insetBottom="5dp">
+            <shape android:shape="oval">
+                <size android:width="12dp" android:height="12dp" />
+                <solid android:color="@color/ink_secondary" />
+            </shape>
+        </inset>
+    </item>
+</selector>

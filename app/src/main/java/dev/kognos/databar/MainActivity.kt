@@ -2,34 +2,34 @@ package dev.kognos.databar
 
 import android.app.Activity
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.Typeface
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
+import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
 
-    private val bg = Color.parseColor("#0F0F12")
-    private val surface = Color.parseColor("#17171B")
-    private val ink = Color.parseColor("#FFFFFF")
-    private val muted = Color.parseColor("#9AA0A6")
-    private val dim = Color.parseColor("#71767C")
-    private val divider = Color.parseColor("#1FFFFFFF")
-    private val accent = Color.parseColor("#7FB4FF")
-    private val trackColor = Color.parseColor("#26262E")
-
+    // Resolved after attach; the activity is recreated when the system switches light/dark.
+    private val surface by lazy { getColor(R.color.surface) }
+    private val ink by lazy { getColor(R.color.ink) }
+    private val inkSecondary by lazy { getColor(R.color.ink_secondary) }
+    private val rule by lazy { getColor(R.color.rule) }
+    private val signal by lazy { getColor(R.color.signal) }
+    private val background by lazy { getColor(R.color.background) }
 
     private lateinit var heroNumber: TextView
+    private lateinit var heroUnit: TextView
     private lateinit var todayLine: TextView
     private lateinit var chart: ImageView
     private lateinit var accessValue: TextView
@@ -47,73 +47,67 @@ class MainActivity : Activity() {
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
-    private fun text(s: String, size: Float, color: Int, bold: Boolean = false): TextView =
+    private fun text(s: String, appearance: Int): TextView =
         TextView(this).apply {
+            setTextAppearance(appearance)
             text = s
-            textSize = size
-            setTextColor(color)
-            if (bold) setTypeface(typeface, Typeface.BOLD)
             includeFontPadding = false
         }
 
-    private fun dividers(): View = View(this).apply {
-        setBackgroundColor(divider)
-        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1)
+    private fun divider(): View = View(this).apply {
+        setBackgroundColor(rule)
+        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1))
     }
 
     private fun row(label: String, right: View?): LinearLayout =
         LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), 0, dp(16), 0)
+            setPadding(dp(18), 0, dp(18), 0)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(52)
             )
-            addView(text(label, 15f, ink), LinearLayout.LayoutParams(
+            addView(text(label, R.style.TextAppearance_DataBar_Row), LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
             ))
             if (right != null) addView(right)
         }
 
+    private fun chip(label: String, mode: Int): TextView =
+        text(label, R.style.TextAppearance_DataBar_Chip).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(13), 0, dp(13), 0)
+            setOnClickListener { setSort(mode) }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
-        window.statusBarColor = bg
-        window.navigationBarColor = bg
-        window.decorView.systemUiVisibility = 0
 
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(bg)
-        root.setPadding(dp(20), dp(32), dp(20), dp(28))
+        root.setPadding(dp(20), dp(30), dp(20), dp(30))
 
-        root.addView(text("DataBar", 28f, ink, true))
+        root.addView(text("DataBar", R.style.TextAppearance_DataBar_Title))
 
-        val headRow = LinearLayout(this)
-        headRow.orientation = LinearLayout.HORIZONTAL
-        headRow.gravity = Gravity.CENTER_VERTICAL
-
-        val headLeft = LinearLayout(this)
-        headLeft.orientation = LinearLayout.VERTICAL
-
-        heroNumber = text("—", 42f, ink, false).apply {
-            fontFeatureSettings = "tnum"
-            setPadding(0, dp(4), 0, 0)
-        }
-        heroNumber.setOnClickListener {
+        val hero = LinearLayout(this)
+        hero.orientation = LinearLayout.HORIZONTAL
+        heroNumber = text("\u2014", R.style.TextAppearance_DataBar_Total)
+        heroUnit = text("", R.style.TextAppearance_DataBar_Unit)
+        hero.addView(heroNumber)
+        hero.addView(heroUnit, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginStart = dp(10) })
+        hero.setOnClickListener {
             if (lastDaily.isNotEmpty()) selectDay(lastDaily.size - 1)
         }
-        headLeft.addView(heroNumber)
-        todayLine = text("", 13f, muted).apply { setPadding(0, dp(8), 0, 0) }
-        headLeft.addView(todayLine)
-
-        headRow.addView(headLeft, LinearLayout.LayoutParams(
-            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
-        ))
-        root.addView(headRow, LinearLayout.LayoutParams(
+        root.addView(hero, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = dp(14) })
+        ).apply { topMargin = dp(30) })
 
+        todayLine = text("", R.style.TextAppearance_DataBar_Summary)
+        root.addView(todayLine, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(16) })
 
         chart = ImageView(this)
         chart.scaleType = ImageView.ScaleType.FIT_CENTER
@@ -127,59 +121,59 @@ class MainActivity : Activity() {
         }
         root.addView(chart, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, dp(132)
-        ).apply { topMargin = dp(14) })
-
-        val gap = View(this)
-        root.addView(gap, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(24)))
+        ).apply { topMargin = dp(26) })
 
         val card = LinearLayout(this)
         card.orientation = LinearLayout.VERTICAL
         card.background = GradientDrawable().apply {
-            cornerRadius = dp(24).toFloat()
+            cornerRadius = dp(20).toFloat()
             setColor(surface)
         }
 
         val wifiSwitch = Switch(this)
+        wifiSwitch.thumbDrawable = getDrawable(R.drawable.switch_thumb)
+        wifiSwitch.trackDrawable = getDrawable(R.drawable.switch_track)
+        wifiSwitch.thumbTintList = null
+        wifiSwitch.trackTintList = null
         wifiSwitch.isChecked = UsageRepo.includeWifi(this)
-        wifiSwitch.thumbTintList = ColorStateList.valueOf(bg)
-        wifiSwitch.trackTintList = ColorStateList.valueOf(ink)
         wifiSwitch.setOnCheckedChangeListener { _, checked ->
             UsageRepo.prefs(this).edit().putBoolean(UsageRepo.KEY_WIFI, checked).apply()
             selected = -1
             refresh()
             DataBarWidget.refreshAll(this)
         }
-        card.addView(row("Include Wi-Fi", wifiSwitch))
-        card.addView(dividers())
+        val wifiRow = row("Include Wi-Fi", wifiSwitch)
+        wifiRow.setOnClickListener { wifiSwitch.toggle() }
+        card.addView(wifiRow)
+        card.addView(divider())
 
-        accessValue = text("", 15f, muted)
+        accessValue = text("", R.style.TextAppearance_DataBar_Value)
         val accessRow = row("Usage access", accessValue)
         accessRow.setOnClickListener {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
         card.addView(accessRow)
-        root.addView(card)
+        root.addView(card, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(26) })
 
-        appsDate = text("", 13f, dim).apply { setPadding(0, dp(26), 0, 0) }
-        root.addView(appsDate)
+        appsDate = text("", R.style.TextAppearance_DataBar_Label)
+        root.addView(appsDate, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(30) })
 
+        // Chips are 48dp tall to tap; the pill drawn inside is 30dp, so 9dp of each margin is the inset.
         val chips = LinearLayout(this)
         chips.orientation = LinearLayout.HORIZONTAL
-        chips.setPadding(0, dp(8), 0, dp(4))
-
-        chipFlag = text("Highlight", 13f, ink)
-        chipFlag.setPadding(dp(14), dp(7), dp(14), dp(7))
-        chipFlag.setOnClickListener { setSort(0) }
-
-        chipVolume = text("Volume", 13f, dim)
-        chipVolume.setPadding(dp(14), dp(7), dp(14), dp(7))
-        chipVolume.setOnClickListener { setSort(1) }
-
-        chips.addView(chipFlag)
+        chipFlag = chip("Highlight", 0)
+        chipVolume = chip("Volume", 1)
+        chips.addView(chipFlag, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)))
         chips.addView(chipVolume, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { marginStart = dp(6) })
-        root.addView(chips)
+            ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)
+        ).apply { marginStart = dp(8) })
+        root.addView(chips, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(3) })
         paintChips()
 
         appsAdapter = AppAdapter()
@@ -207,10 +201,11 @@ class MainActivity : Activity() {
     private fun refresh() {
         val ok = UsageRepo.hasUsageAccess(this)
         accessValue.text = if (ok) "Granted" else "Needed"
-        accessValue.setTextColor(if (ok) muted else Color.parseColor("#F2A0A0"))
+        accessValue.setTextColor(if (ok) inkSecondary else signal)
 
         if (!ok) {
-            heroNumber.text = "—"
+            heroNumber.text = "\u2014"
+            heroUnit.text = ""
             todayLine.text = "grant Usage access below"
             chart.setImageBitmap(null)
             appsDate.text = ""
@@ -228,8 +223,10 @@ class MainActivity : Activity() {
         val today = daily.lastOrNull()?.bytes ?: 0L
         val avg = total / daily.size.coerceAtLeast(1)
 
-        heroNumber.text = UsageRepo.fmt(total)
-        todayLine.text = "today " + UsageRepo.fmt(today) + "  ·  avg " + UsageRepo.fmt(avg) + " / day"
+        val (number, unit) = UsageRepo.fmtParts(total)
+        heroNumber.text = number
+        heroUnit.text = unit
+        todayLine.text = "today " + UsageRepo.fmt(today) + "  \u00b7  avg " + UsageRepo.fmt(avg) + " / day"
 
         drawChart(daily)
         renderApps(daily, selected)
@@ -244,7 +241,10 @@ class MainActivity : Activity() {
         chart.setImageBitmap(
             DotMatrix.draw(
                 daily.map { it.bytes }, chart.width, chart.height, resources.displayMetrics.density,
-                selected, unlit = surface, dot = dim, ink = ink
+                selected,
+                unlit = getColor(R.color.dot_unlit),
+                dot = getColor(R.color.dot),
+                ink = ink
             )
         )
     }
@@ -261,7 +261,7 @@ class MainActivity : Activity() {
         val day = daily[idx]
         val fmtDate = java.text.SimpleDateFormat("EEE, d MMM", java.util.Locale.ENGLISH)
             .format(java.util.Date(day.start))
-        appsDate.text = if (idx == daily.size - 1) "Watch · today" else "Watch · $fmtDate"
+        appsDate.text = if (idx == daily.size - 1) "Watch \u00b7 today" else "Watch \u00b7 $fmtDate"
 
         val wifi = UsageRepo.includeWifi(this)
         val items = UsageRepo.watch(
@@ -277,7 +277,7 @@ class MainActivity : Activity() {
                 Row(
                     r.first, r.second,
                     "\u2191 " + UsageRepo.fmt(it.tx) + "   \u2193 " + UsageRepo.fmt(it.rx),
-                    "bg " + it.bgPercent + "%  ·  " + String.format("%.1f", it.ratio) + "\u00d7 avg",
+                    "bg " + it.bgPercent + "%  \u00b7  " + String.format("%.1f", it.ratio) + "\u00d7 avg",
                     (scaleBy(it).toFloat() / max.toFloat()),
                     it.flagged
                 )
@@ -313,6 +313,22 @@ class MainActivity : Activity() {
         return dr
     }
 
+    /** Share of the day as a row of 3dp dots every 6dp (DESIGN.md, "Dot matrix"). */
+    private inner class DotBar(private val share: Float, private val fill: Int) : View(this@MainActivity) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        override fun onDraw(canvas: Canvas) {
+            val step = dp(6).toFloat()
+            val radius = dp(3) / 2f
+            val n = (width / step).toInt()
+            val on = if (share <= 0f || n == 0) 0 else (n * share).roundToInt().coerceIn(1, n)
+            for (i in 0 until n) {
+                paint.color = if (i < on) fill else rule
+                canvas.drawCircle(i * step + radius, height / 2f, radius, paint)
+            }
+        }
+    }
+
     private inner class AppAdapter : android.widget.BaseAdapter() {
         private var items: List<Row> = emptyList()
 
@@ -330,7 +346,7 @@ class MainActivity : Activity() {
 
             val wrap = LinearLayout(this@MainActivity)
             wrap.orientation = LinearLayout.VERTICAL
-            wrap.setPadding(0, dp(9), 0, dp(9))
+            wrap.setPadding(0, dp(14), 0, dp(12))
 
             val row = LinearLayout(this@MainActivity)
             row.orientation = LinearLayout.HORIZONTAL
@@ -344,50 +360,47 @@ class MainActivity : Activity() {
             val dr = iconFor(it0.pkg)
             if (dr != null) icon.setImageDrawable(dr) else icon.setImageBitmap(null)
 
-            row.addView(text(it0.label, 15f, ink), LinearLayout.LayoutParams(
+            val name = text(it0.label, R.style.TextAppearance_DataBar_AppName)
+            name.maxLines = 1
+            name.ellipsize = TextUtils.TruncateAt.END
+            row.addView(name, LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
             ))
 
             val right = LinearLayout(this@MainActivity)
             right.orientation = LinearLayout.VERTICAL
             right.gravity = Gravity.END
-            val top = text(it0.line1, 12f, ink)
+            val top = text(it0.line1, R.style.TextAppearance_DataBar_Traffic)
             top.gravity = Gravity.END
-            val bottom = text(it0.line2, 11f, if (it0.flag) Color.parseColor("#FF8080") else muted)
+            val bottom = text(it0.line2, R.style.TextAppearance_DataBar_Baseline)
+            if (it0.flag) bottom.setTextColor(signal)
             bottom.gravity = Gravity.END
-            bottom.setPadding(0, dp(2), 0, 0)
+            bottom.setPadding(0, dp(3), 0, 0)
             right.addView(top)
             right.addView(bottom)
             row.addView(right)
             wrap.addView(row)
 
-            val share = it0.share.coerceIn(0f, 1f)
-            val bar = LinearLayout(this@MainActivity)
-            bar.orientation = LinearLayout.HORIZONTAL
-            val fill = View(this@MainActivity)
-            fill.setBackgroundColor(if (it0.flag) Color.parseColor("#FF6B6B") else accent)
-            val rest = View(this@MainActivity)
-            rest.setBackgroundColor(trackColor)
-            bar.addView(fill, LinearLayout.LayoutParams(0, dp(3), share.coerceAtLeast(0.001f)))
-            bar.addView(rest, LinearLayout.LayoutParams(0, dp(3), (1f - share).coerceAtLeast(0.001f)))
-            wrap.addView(bar, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(3)
-            ).apply { topMargin = dp(7) })
+            wrap.addView(
+                DotBar(it0.share.coerceIn(0f, 1f), if (it0.flag) signal else ink),
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(4)).apply {
+                    topMargin = dp(10)
+                }
+            )
             return wrap
         }
     }
 
     private fun paintChips() {
         if (!::chipFlag.isInitialized) return
-        chipFlag.setTextColor(if (sortMode == 0) ink else dim)
-        chipVolume.setTextColor(if (sortMode == 1) ink else dim)
-        chipFlag.background = GradientDrawable().apply {
-            cornerRadius = dp(16).toFloat()
-            setColor(if (sortMode == 0) Color.parseColor("#26262E") else Color.TRANSPARENT)
-        }
-        chipVolume.background = GradientDrawable().apply {
-            cornerRadius = dp(16).toFloat()
-            setColor(if (sortMode == 1) Color.parseColor("#26262E") else Color.TRANSPARENT)
+        for ((chip, mode) in listOf(chipFlag to 0, chipVolume to 1)) {
+            val on = sortMode == mode
+            chip.setTextColor(if (on) background else inkSecondary)
+            val pill = GradientDrawable().apply {
+                cornerRadius = dp(15).toFloat()
+                if (on) setColor(ink) else setStroke(dp(1), rule)
+            }
+            chip.background = InsetDrawable(pill, 0, dp(9), 0, dp(9))
         }
     }
 
