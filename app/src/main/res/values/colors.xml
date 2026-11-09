@@ -7,8 +7,4 @@
     <color name="rule">#E6E6E6</color>
     <color name="track">#EBEBEB</color>
     <color name="signal">#E60F40</color>
-    <color name="ink">#000000</color>
-    <color name="dot">#8A8A8A</color>
-    <color name="dot_unlit">#EFEFEF</color>
-    <color name="widget_background">#FFFFFF</color>
 </resources>

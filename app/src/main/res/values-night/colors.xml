@@ -6,8 +6,4 @@
     <color name="rule">#262626</color>
     <color name="track">#2A2A2A</color>
     <color name="signal">#F22C59</color>
-    <color name="ink">#FFFFFF</color>
-    <color name="dot">#5C5C5C</color>
-    <color name="dot_unlit">#171717</color>
-    <color name="widget_background">#000000</color>
 </resources>

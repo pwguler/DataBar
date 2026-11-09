@@ -63,14 +63,14 @@ class DataBarWidget : AppWidgetProvider() {
             manager.updateAppWidget(widgetId, views)
         }
 
-        /** The widget at one size in dp: white masks of unlit dots, days and today, tinted by the layout. */
+        /** The widget at one size in dp: white masks of the days and of today, tinted by the layout. */
         private fun views(context: Context, values: List<Long>, widthDp: Float, heightDp: Float): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget)
             val tap = PendingIntent.getActivity(
                 context, 0, Intent(context, MainActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.widgetRoot, tap)
+            views.setOnClickPendingIntent(android.R.id.background, tap)
 
             val density = context.resources.displayMetrics.density
             val padding = 2 * context.resources.getDimension(R.dimen.widget_padding)
@@ -79,7 +79,7 @@ class DataBarWidget : AppWidgetProvider() {
             val today = values.size - 1
             val on = Color.WHITE
             val off = Color.TRANSPARENT
-            views.setImageViewBitmap(R.id.ivDots, Bars.draw(values, w, h, today, bar = on, accent = off))
+            views.setImageViewBitmap(R.id.ivBars, Bars.draw(values, w, h, today, bar = on, accent = off))
             views.setImageViewBitmap(R.id.ivToday, Bars.draw(values, w, h, today, bar = off, accent = on))
             return views
         }
