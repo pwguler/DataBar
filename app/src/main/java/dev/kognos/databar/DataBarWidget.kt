@@ -7,6 +7,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
+import android.os.Bundle
 import android.widget.RemoteViews
 
 class DataBarWidget : AppWidgetProvider() {
@@ -15,13 +17,13 @@ class DataBarWidget : AppWidgetProvider() {
         for (id in ids) render(context, manager, id)
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
-        super.onReceive(context, intent)
-        if (intent.action == ACTION_REFRESH) refreshAll(context)
+    override fun onAppWidgetOptionsChanged(
+        context: Context, manager: AppWidgetManager, widgetId: Int, newOptions: Bundle
+    ) {
+        render(context, manager, widgetId)
     }
 
     companion object {
-        const val ACTION_REFRESH = "dev.kognos.databar.REFRESH"
 
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context) ?: return
@@ -29,7 +31,14 @@ class DataBarWidget : AppWidgetProvider() {
             for (id in ids) render(context, manager, id)
         }
 
-        private fun color(context: Context, id: Int): Int = context.resources.getColor(id, null)
+        /** Android 12+ resolves the color when the host applies the views, so light/dark switches need no redraw. */
+        private fun tint(context: Context, views: RemoteViews, viewId: Int, color: Int) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                views.setColor(viewId, "setColorFilter", color)
+            } else {
+                views.setInt(viewId, "setColorFilter", context.getColor(color))
+            }
+        }
 
         fun render(context: Context, manager: AppWidgetManager, widgetId: Int) {
             val views = RemoteViews(context.packageName, R.layout.widget)
@@ -37,29 +46,29 @@ class DataBarWidget : AppWidgetProvider() {
                 context, 0, Intent(context, MainActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.ivBars, tap)
+            views.setOnClickPendingIntent(R.id.widgetRoot, tap)
 
             val dm = context.resources.displayMetrics
-            val opts = manager.getAppWidgetOptions(widgetId) ?: android.os.Bundle()
-            val optW = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 70)
-            val optH = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110)
-            val chartW = ((optW - 24).coerceAtLeast(24) * dm.density).toInt()
-            val chartH = ((optH - 26).coerceAtLeast(24) * dm.density).toInt()
-            val daily = if (UsageRepo.hasUsageAccess(context)) {
-                UsageRepo.dailyLast(context, UsageRepo.BARS, UsageRepo.includeWifi(context))
+            val opts = manager.getAppWidgetOptions(widgetId) ?: Bundle()
+            // The tile has 14dp padding on each side (DESIGN.md, "Shape").
+            val w = ((opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 110) - 28).coerceAtLeast(24) * dm.density).toInt()
+            val h = ((opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40) - 28).coerceAtLeast(12) * dm.density).toInt()
+            val values = if (UsageRepo.hasUsageAccess(context)) {
+                UsageRepo.dailyLast(context, UsageRepo.BARS, UsageRepo.includeWifi(context)).map { it.bytes }
             } else {
                 emptyList()
             }
 
-            views.setImageViewBitmap(
-                R.id.ivBars,
-                DotMatrix.draw(
-                    daily.map { it.bytes }, chartW, chartH, dm.density, daily.size - 1,
-                    unlit = Color.TRANSPARENT,
-                    dot = color(context, R.color.w_bar),
-                    ink = color(context, R.color.w_bar_today)
-                )
-            )
+            // Each layer is a white mask of one kind of dot, tinted with that kind's color.
+            fun layer(viewId: Int, color: Int, unlit: Int, dot: Int, ink: Int) {
+                views.setImageViewBitmap(viewId, DotMatrix.draw(values, w, h, dm.density, values.size - 1, unlit, dot, ink))
+                tint(context, views, viewId, color)
+            }
+            val on = Color.WHITE
+            val off = Color.TRANSPARENT
+            layer(R.id.ivUnlit, R.color.dot_unlit, unlit = on, dot = off, ink = off)
+            layer(R.id.ivDots, R.color.dot, unlit = off, dot = on, ink = off)
+            layer(R.id.ivToday, R.color.ink, unlit = off, dot = off, ink = on)
             manager.updateAppWidget(widgetId, views)
         }
     }

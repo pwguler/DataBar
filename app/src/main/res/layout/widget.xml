@@ -1,18 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@drawable/widget_bg"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="13dp"
-    android:paddingBottom="13dp">
+    android:contentDescription="@string/widget_desc"
+    android:padding="14dp">
 
     <ImageView
-        android:id="@+id/ivBars"
+        android:id="@+id/ivUnlit"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitCenter"
-        android:contentDescription="@string/widget_desc"/>
-</LinearLayout>
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter" />
+
+    <ImageView
+        android:id="@+id/ivDots"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter" />
+
+    <ImageView
+        android:id="@+id/ivToday"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter" />
+</FrameLayout>

@@ -9,6 +9,4 @@
     <color name="dot_unlit">#171717</color>
     <color name="signal">#FF4545</color>
     <color name="widget_background">#000000</color>
-    <color name="w_bar">#C4B5FD</color>
-    <color name="w_bar_today">#FFFFFF</color>
 </resources>
