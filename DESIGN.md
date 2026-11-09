@@ -63,7 +63,7 @@ All values in dp.
 
 The 30-day chart in the app and the widget is a dot matrix.
 
-- One column per day, oldest on the left. Pitch is the width divided by 30; rows are the height divided by the pitch, rounded down. Dot diameter is 0.62 × pitch.
+- One column per day, oldest on the left. Pitch is the width divided by 30, but never more than the height, so at least one row fits; rows are the height divided by the pitch, rounded down. Dot diameter is 0.62 × pitch.
 - A day with no traffic lights no dot. Any other day lights at least one dot and at most every row: the largest day lights every row, the others in proportion, rounded.
 - Lit dots are `dot`, the selected day's lit dots are `ink`, unlit dots are `dot_unlit`.
 - When the pitch is under 6dp, as in the 2x1 widget, the dots grow to 0.8 × pitch and unlit dots are left out.

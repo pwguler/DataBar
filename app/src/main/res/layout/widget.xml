@@ -1,30 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Each ImageView holds a white mask of one kind of dot. The host resolves the tints with the tile
+     background when it inflates the layout, so a light/dark switch changes them together. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:contentDescription="@string/widget_desc"
-    android:padding="14dp">
+    android:padding="@dimen/widget_padding">
 
     <ImageView
         android:id="@+id/ivUnlit"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter"
+        android:tint="@color/dot_unlit" />
 
     <ImageView
         android:id="@+id/ivDots"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter"
+        android:tint="@color/dot" />
 
     <ImageView
         android:id="@+id/ivToday"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter"
+        android:tint="@color/ink" />
 </FrameLayout>

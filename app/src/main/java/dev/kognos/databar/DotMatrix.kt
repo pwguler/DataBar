@@ -27,7 +27,7 @@ object DotMatrix {
         if (values.isEmpty()) return bmp
         val canvas = Canvas(bmp)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val pitch = bmp.width.toFloat() / values.size
+        val pitch = minOf(bmp.width.toFloat() / values.size, bmp.height.toFloat())
         val rows = (bmp.height / pitch).toInt()
         val small = pitch < 6f * density
         val radius = pitch * (if (small) 0.4f else 0.31f)

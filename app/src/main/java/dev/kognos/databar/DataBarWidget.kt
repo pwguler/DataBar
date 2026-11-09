@@ -6,9 +6,11 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.util.SizeF
 import android.widget.RemoteViews
 
 class DataBarWidget : AppWidgetProvider() {
@@ -31,16 +33,38 @@ class DataBarWidget : AppWidgetProvider() {
             for (id in ids) render(context, manager, id)
         }
 
-        /** Android 12+ resolves the color when the host applies the views, so light/dark switches need no redraw. */
-        private fun tint(context: Context, views: RemoteViews, viewId: Int, color: Int) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                views.setColor(viewId, "setColorFilter", color)
+        fun render(context: Context, manager: AppWidgetManager, widgetId: Int) {
+            val values = if (UsageRepo.hasUsageAccess(context)) {
+                UsageRepo.dailyLast(context, UsageRepo.BARS, UsageRepo.includeWifi(context)).map { it.bytes }
             } else {
-                views.setInt(viewId, "setColorFilter", context.getColor(color))
+                emptyList()
             }
+            val opts = manager.getAppWidgetOptions(widgetId) ?: Bundle()
+            // Android 12+ launchers list the exact sizes, typically portrait and landscape; the host picks one.
+            val sizes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                @Suppress("DEPRECATION")
+                opts.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+            } else {
+                null
+            }
+            val views = if (!sizes.isNullOrEmpty()) {
+                RemoteViews(sizes.associateWith { views(context, values, it.width, it.height) })
+            } else {
+                // Cells are narrowest in portrait and shortest in landscape.
+                val portrait = context.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
+                val w = opts.getInt(
+                    if (portrait) AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH else AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 110
+                )
+                val h = opts.getInt(
+                    if (portrait) AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT else AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40
+                )
+                views(context, values, w.toFloat(), h.toFloat())
+            }
+            manager.updateAppWidget(widgetId, views)
         }
 
-        fun render(context: Context, manager: AppWidgetManager, widgetId: Int) {
+        /** The widget at one size in dp: white masks of unlit dots, days and today, tinted by the layout. */
+        private fun views(context: Context, values: List<Long>, widthDp: Float, heightDp: Float): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget)
             val tap = PendingIntent.getActivity(
                 context, 0, Intent(context, MainActivity::class.java),
@@ -48,28 +72,17 @@ class DataBarWidget : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.widgetRoot, tap)
 
-            val dm = context.resources.displayMetrics
-            val opts = manager.getAppWidgetOptions(widgetId) ?: Bundle()
-            // The tile has 14dp padding on each side (DESIGN.md, "Shape").
-            val w = ((opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 110) - 28).coerceAtLeast(24) * dm.density).toInt()
-            val h = ((opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40) - 28).coerceAtLeast(12) * dm.density).toInt()
-            val values = if (UsageRepo.hasUsageAccess(context)) {
-                UsageRepo.dailyLast(context, UsageRepo.BARS, UsageRepo.includeWifi(context)).map { it.bytes }
-            } else {
-                emptyList()
-            }
-
-            // Each layer is a white mask of one kind of dot, tinted with that kind's color.
-            fun layer(viewId: Int, color: Int, unlit: Int, dot: Int, ink: Int) {
-                views.setImageViewBitmap(viewId, DotMatrix.draw(values, w, h, dm.density, values.size - 1, unlit, dot, ink))
-                tint(context, views, viewId, color)
-            }
+            val density = context.resources.displayMetrics.density
+            val padding = 2 * context.resources.getDimension(R.dimen.widget_padding)
+            val w = (widthDp * density - padding).toInt()
+            val h = (heightDp * density - padding).toInt()
+            val today = values.size - 1
             val on = Color.WHITE
             val off = Color.TRANSPARENT
-            layer(R.id.ivUnlit, R.color.dot_unlit, unlit = on, dot = off, ink = off)
-            layer(R.id.ivDots, R.color.dot, unlit = off, dot = on, ink = off)
-            layer(R.id.ivToday, R.color.ink, unlit = off, dot = off, ink = on)
-            manager.updateAppWidget(widgetId, views)
+            views.setImageViewBitmap(R.id.ivUnlit, DotMatrix.draw(values, w, h, density, today, unlit = on, dot = off, ink = off))
+            views.setImageViewBitmap(R.id.ivDots, DotMatrix.draw(values, w, h, density, today, unlit = off, dot = on, ink = off))
+            views.setImageViewBitmap(R.id.ivToday, DotMatrix.draw(values, w, h, density, today, unlit = off, dot = off, ink = on))
+            return views
         }
     }
 }
