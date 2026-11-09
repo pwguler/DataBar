@@ -14,7 +14,6 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 
@@ -265,44 +264,22 @@ class MainActivity : Activity() {
         appsDate.text = if (idx == daily.size - 1) "Watch · today" else "Watch · $fmtDate"
 
         val wifi = UsageRepo.includeWifi(this)
-        val spanStart = daily.first().start
-        val now = System.currentTimeMillis()
-        val days = daily.size.coerceAtLeast(1)
+        val items = UsageRepo.watch(
+            UsageRepo.flows(this, day.start, day.start + 24L * 60 * 60 * 1000, wifi),
+            UsageRepo.flows(this, daily.first().start, System.currentTimeMillis(), wifi),
+            daily.size
+        )
 
-        val todayFlows = UsageRepo.flows(this, day.start, day.start + 24L * 60 * 60 * 1000, wifi)
-        val monthFlows = UsageRepo.flows(this, spanStart, now, wifi)
-
-        val baseTx = HashMap<Int, Long>()
-        for (f in monthFlows) baseTx[f.uid] = (baseTx[f.uid] ?: 0L) + f.tx
-
-        data class Item(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float)
-
-        val items = ArrayList<Item>()
-        val agg = HashMap<Int, LongArray>()   // uid -> [tx, rx, bgTx]
-        for (f in todayFlows) {
-            val a = agg.getOrPut(f.uid) { LongArray(3) }
-            a[0] += f.tx
-            a[1] += f.rx
-            if (f.state == UsageRepo.STATE_BG) a[2] += f.tx
-        }
-        for ((uid, v) in agg) {
-            if (v[0] <= 0L) continue
-            val baseline = ((baseTx[uid] ?: 0L) / days).coerceAtLeast(1L)
-            items.add(Item(uid, v[0], v[1], v[2], v[0].toFloat() / baseline.toFloat()))
-        }
-
-        fun build(ordered: List<Item>, scaleBy: (Item) -> Long): List<Row> {
+        fun build(ordered: List<UsageRepo.Watch>, scaleBy: (UsageRepo.Watch) -> Long): List<Row> {
             val max = ordered.maxOfOrNull(scaleBy)?.coerceAtLeast(1L) ?: 1L
-            return ordered.take(15).map { it ->
-                val r = UsageRepo.resolvePublic(this, it.uid)
-                val bgPct = if (it.tx > 0) (it.bgTx * 100 / it.tx).toInt() else 0
-                val flag = it.ratio >= 3f && it.bgTx * 2 >= it.tx
+            return ordered.take(15).map {
+                val r = UsageRepo.resolve(this, it.uid)
                 Row(
                     r.first, r.second,
                     "\u2191 " + UsageRepo.fmt(it.tx) + "   \u2193 " + UsageRepo.fmt(it.rx),
-                    "bg " + bgPct + "%  ·  " + String.format("%.1f", it.ratio) + "\u00d7 avg",
+                    "bg " + it.bgPercent + "%  ·  " + String.format("%.1f", it.ratio) + "\u00d7 avg",
                     (scaleBy(it).toFloat() / max.toFloat()),
-                    flag
+                    it.flagged
                 )
             }
         }

@@ -121,36 +121,37 @@ object UsageRepo {
         return out
     }
 
-    data class AppUsage(
-        val uid: Int,
-        val label: String,
-        val pkg: String?,
-        val rx: Long,
-        val tx: Long
-    ) {
-        val bytes: Long get() = rx + tx
-    }
-
-    data class RxTx(val rx: Long, val tx: Long) {
-        val bytes: Long get() = rx + tx
-    }
-
     /** Aliran data dipisah per uid + state (foreground / background). */
     data class Flow(val uid: Int, val state: Int, val rx: Long, val tx: Long)
 
     /** One app's traffic on the watched day, against its own daily average over the span. */
     data class Watch(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float) {
-        val bgPercent: Int get() = TODO("not implemented")
-        val flagged: Boolean get() = TODO("not implemented")
+        val bgPercent: Int get() = if (tx > 0) (bgTx * 100 / tx).toInt() else 0
+        val flagged: Boolean get() = ratio >= 3f && bgTx * 2 >= tx
     }
 
     /** Apps that uploaded on the watched day, from per-state flows of that day and of the whole [days]-day span. */
-    fun watch(day: List<Flow>, span: List<Flow>, days: Int): List<Watch> = TODO("not implemented")
+    fun watch(day: List<Flow>, span: List<Flow>, days: Int): List<Watch> {
+        val spanTx = HashMap<Int, Long>()
+        for (f in span) spanTx[f.uid] = (spanTx[f.uid] ?: 0L) + f.tx
+        val agg = HashMap<Int, LongArray>() // uid -> [tx, rx, bgTx]
+        for (f in day) {
+            val a = agg.getOrPut(f.uid) { LongArray(3) }
+            a[0] += f.tx
+            a[1] += f.rx
+            if (f.state == NetworkStats.Bucket.STATE_DEFAULT) a[2] += f.tx
+        }
+        return agg.filter { it.value[0] > 0L }.map { (uid, v) ->
+            val baseline = ((spanTx[uid] ?: 0L) / days.coerceAtLeast(1)).coerceAtLeast(1L)
+            Watch(uid, v[0], v[1], v[2], v[0].toFloat() / baseline)
+        }
+    }
 
     private fun collectState(
         nsm: NetworkStatsManager, type: Int, start: Long, end: Long, out: HashMap<Long, Flow>
     ) {
-        val stats = nsm.queryDetails(type, null, start, end)
+        // querySummary keeps buckets split by state; queryDetails merges them into STATE_ALL.
+        val stats = nsm.querySummary(type, null, start, end)
         try {
             val b = NetworkStats.Bucket()
             while (stats.hasNextBucket()) {
@@ -186,28 +187,6 @@ object UsageRepo {
         return acc.values.toList()
     }
 
-    const val STATE_BG = 3
-    const val STATE_FG = 2
-
-    private fun collect(
-        nsm: NetworkStatsManager, type: Int, start: Long, end: Long, out: HashMap<Int, RxTx>
-    ) {
-        val stats = nsm.queryDetails(type, null, start, end)
-        try {
-            val bucket = NetworkStats.Bucket()
-            while (stats.hasNextBucket()) {
-                stats.getNextBucket(bucket)
-                val prev = out[bucket.uid]
-                out[bucket.uid] = RxTx(
-                    (prev?.rx ?: 0L) + bucket.rxBytes,
-                    (prev?.tx ?: 0L) + bucket.txBytes
-                )
-            }
-        } finally {
-            stats.close()
-        }
-    }
-
     private var uidLabels: HashMap<Int, Pair<String, String?>>? = null
 
     /** Peta uid -> nama app, dibangun sekali dari semua aplikasi terpasang. */
@@ -230,11 +209,8 @@ object UsageRepo {
         return map
     }
 
-    /** Nama tampilan untuk uid NetworkStats, termasuk uid sistem yang bukan aplikasi biasa. */
-    /** Nama + package untuk sebuah uid (dipakai UI). */
-    fun resolvePublic(c: Context, uid: Int): Pair<String, String?> = resolve(c, uid)
-
-    private fun resolve(c: Context, uid: Int): Pair<String, String?> {
+    /** Nama tampilan + package untuk uid NetworkStats, termasuk uid sistem yang bukan aplikasi biasa. */
+    fun resolve(c: Context, uid: Int): Pair<String, String?> {
         when (uid) {
             -5 -> return "Hotspot / tethering" to null
             -4 -> return "Removed app" to null
@@ -260,48 +236,6 @@ object UsageRepo {
         } catch (t: Throwable) {
         }
         return "System uid " + uid to null
-    }
-
-    /** Pemakaian per aplikasi pada rentang [start]..[end], terbesar dulu. */
-    fun perApp(c: Context, start: Long, end: Long, wifi: Boolean): List<AppUsage> {
-        if (end <= start) return emptyList()
-        val nsm = c.getSystemService(NetworkStatsManager::class.java) ?: return emptyList()
-        val totals = HashMap<Int, RxTx>()
-        try {
-            collect(nsm, ConnectivityManager.TYPE_MOBILE, start, end, totals)
-        } catch (t: Throwable) {
-        }
-        if (wifi) {
-            try {
-                collect(nsm, ConnectivityManager.TYPE_WIFI, start, end, totals)
-            } catch (t: Throwable) {
-            }
-        }
-        return totals.entries
-            .filter { it.value.bytes > 0L }
-            .map { e ->
-                val r = resolve(c, e.key)
-                AppUsage(e.key, r.first, r.second, e.value.rx, e.value.tx)
-            }
-            .sortedByDescending { it.bytes }
-    }
-
-    /** Total byte per uid pada rentang [start]..[end]. */
-    fun perAppTotals(c: Context, start: Long, end: Long, wifi: Boolean): HashMap<Int, RxTx> {
-        val out = HashMap<Int, RxTx>()
-        if (end <= start) return out
-        val nsm = c.getSystemService(NetworkStatsManager::class.java) ?: return out
-        try {
-            collect(nsm, ConnectivityManager.TYPE_MOBILE, start, end, out)
-        } catch (t: Throwable) {
-        }
-        if (wifi) {
-            try {
-                collect(nsm, ConnectivityManager.TYPE_WIFI, start, end, out)
-            } catch (t: Throwable) {
-            }
-        }
-        return out
     }
 
     /** Angka & satuan terpisah, desimal pakai koma (gaya Indonesia). */
