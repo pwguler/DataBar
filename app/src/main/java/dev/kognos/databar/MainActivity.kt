@@ -6,7 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
@@ -393,7 +393,8 @@ class MainActivity : Activity() {
                 // Selected: the accent at 16% opacity.
                 if (on) setColor((accent and 0x00FFFFFF) or 0x29000000) else setStroke(dp(1), rule)
             }
-            chip.background = InsetDrawable(pill, 0, dp(9), 0, dp(9))
+            // Layer insets, not an InsetDrawable: a background's padding would replace the chip's own.
+            chip.background = LayerDrawable(arrayOf(pill)).apply { setLayerInset(0, 0, dp(9), 0, dp(9)) }
         }
     }
 
