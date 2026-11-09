@@ -4,7 +4,7 @@ DataBar looks like a Samsung app. The phone's theme is the source: on a Samsung 
 
 ## Sources
 
-- Samsung's One UI design guide: content in blocks with large rounded corners (26dp), side margins of at least 24dp, an expanded app bar of 39.67% of the screen height on phones, and the primary blue `#0381FE`.
+- Samsung's One UI design guide: content in blocks with large rounded corners (26dp), side margins of at least 24dp, and the primary blue `#0381FE`.
 - The screen and block neutrals come from the color images of that guide (light `#FCFCFC`, dark `#010101`).
 - Android's widget guide: `Theme.DeviceDefault.DayNight` on the widget root for the device colors, `@android:id/background` for the launch transition, and `system_app_widget_background_radius` on Android 12+.
 
@@ -47,7 +47,7 @@ Contrast (WCAG 2), light / dark: `bar` on `block` 3.15 / 3.36; `signal` on `bloc
 
 All values in dp.
 
-- Header: at least the top 39.67% of the screen height, growing with its text, with at least 24 above and below. "DataBar", the total with its unit on one baseline, and the summary line, centered, 14 apart.
+- Header: sized to its text, with 32 above and 24 below. "DataBar", the total with its unit on one baseline, and the summary line, centered, 14 apart.
 - Blocks: 12 from the screen edges and 12 apart, corner radius 26, padding 20; the settings block has 4 above and below its rows. 24 below the last block.
 - Settings rows: at least 56 tall, a 1dp `rule` between them. Tapping anywhere on the Wi-Fi row toggles the switch.
 - Apps block: the title, the chips 14 below it, then the rows 6 below the chips. Chips are 30 tall pills with 14 side padding, 8 apart, inside a 48 tall tap area. Selected chips are filled with the accent at 16% opacity; the others have a 1dp `rule` outline.

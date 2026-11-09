@@ -104,12 +104,11 @@ class MainActivity : Activity() {
         content.orientation = LinearLayout.VERTICAL
         content.setPadding(dp(12), 0, dp(12), dp(24))
 
-        // One UI's expanded app bar: at least the top 39.67% of the screen, growing when its text needs more.
+        // One UI's title area: centered, sized to its text.
         val header = LinearLayout(this)
         header.orientation = LinearLayout.VERTICAL
         header.gravity = Gravity.CENTER
-        header.minimumHeight = (resources.displayMetrics.heightPixels * 0.3967f).toInt()
-        header.setPadding(0, dp(24), 0, dp(24))
+        header.setPadding(0, dp(32), 0, dp(24))
         header.addView(text("DataBar", R.style.TextAppearance_DataBar_Header))
         val hero = LinearLayout(this)
         hero.orientation = LinearLayout.HORIZONTAL
