@@ -40,6 +40,11 @@ class MainActivity : Activity() {
     private lateinit var appsAdapter: AppAdapter
 
     private var lastDaily: List<UsageRepo.Day> = emptyList()
+    private var sortMode = 0
+    private var rowsByFlag: List<Row> = emptyList()
+    private var rowsByVolume: List<Row> = emptyList()
+    private lateinit var chipFlag: TextView
+    private lateinit var chipVolume: TextView
     private var selected: Int = -1
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
@@ -160,8 +165,24 @@ class MainActivity : Activity() {
         appsDate = text("", 13f, dim).apply { setPadding(0, dp(26), 0, 0) }
         root.addView(appsDate)
 
-        val listGap = View(this)
-        root.addView(listGap, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(8)))
+        val chips = LinearLayout(this)
+        chips.orientation = LinearLayout.HORIZONTAL
+        chips.setPadding(0, dp(8), 0, dp(4))
+
+        chipFlag = text("Highlight", 13f, ink)
+        chipFlag.setPadding(dp(14), dp(7), dp(14), dp(7))
+        chipFlag.setOnClickListener { setSort(0) }
+
+        chipVolume = text("Volume", 13f, dim)
+        chipVolume.setPadding(dp(14), dp(7), dp(14), dp(7))
+        chipVolume.setOnClickListener { setSort(1) }
+
+        chips.addView(chipFlag)
+        chips.addView(chipVolume, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginStart = dp(6) })
+        root.addView(chips)
+        paintChips()
 
         appsAdapter = AppAdapter()
         appsList = android.widget.ListView(this)
@@ -241,38 +262,64 @@ class MainActivity : Activity() {
         val day = daily[idx]
         val fmtDate = java.text.SimpleDateFormat("EEE, d MMM", java.util.Locale.ENGLISH)
             .format(java.util.Date(day.start))
-        appsDate.text = if (idx == daily.size - 1) "Apps · today" else "Apps · $fmtDate"
+        appsDate.text = if (idx == daily.size - 1) "Watch · today" else "Watch · $fmtDate"
 
         val wifi = UsageRepo.includeWifi(this)
-        val apps = UsageRepo.perApp(
-            this, day.start, day.start + 24L * 60 * 60 * 1000, wifi
-        )
-        val days = daily.size.coerceAtLeast(1)
         val spanStart = daily.first().start
-        val totals = UsageRepo.perAppTotals(
-            this, spanStart, System.currentTimeMillis(), wifi
-        )
-        val dayMax = apps.maxOfOrNull { it.bytes }?.coerceAtLeast(1L) ?: 1L
-        appsAdapter.submit(apps.map { a ->
-            val tot = totals[a.uid]
-            val avgRx = (tot?.rx ?: a.rx) / days
-            val avgTx = (tot?.tx ?: a.tx) / days
-            Row(
-                a.label, a.pkg,
-                UsageRepo.fmt(a.rx), UsageRepo.fmt(a.tx),
-                UsageRepo.fmt(avgRx), UsageRepo.fmt(avgTx),
-                (a.bytes.toFloat() / dayMax.toFloat())
-            )
-        })
+        val now = System.currentTimeMillis()
+        val days = daily.size.coerceAtLeast(1)
+
+        val todayFlows = UsageRepo.flows(this, day.start, day.start + 24L * 60 * 60 * 1000, wifi)
+        val monthFlows = UsageRepo.flows(this, spanStart, now, wifi)
+
+        val baseTx = HashMap<Int, Long>()
+        for (f in monthFlows) baseTx[f.uid] = (baseTx[f.uid] ?: 0L) + f.tx
+
+        data class Item(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float)
+
+        val items = ArrayList<Item>()
+        val agg = HashMap<Int, LongArray>()   // uid -> [tx, rx, bgTx]
+        for (f in todayFlows) {
+            val a = agg.getOrPut(f.uid) { LongArray(3) }
+            a[0] += f.tx
+            a[1] += f.rx
+            if (f.state == UsageRepo.STATE_BG) a[2] += f.tx
+        }
+        for ((uid, v) in agg) {
+            if (v[0] <= 0L) continue
+            val baseline = ((baseTx[uid] ?: 0L) / days).coerceAtLeast(1L)
+            items.add(Item(uid, v[0], v[1], v[2], v[0].toFloat() / baseline.toFloat()))
+        }
+
+        fun build(ordered: List<Item>, scaleBy: (Item) -> Long): List<Row> {
+            val max = ordered.maxOfOrNull(scaleBy)?.coerceAtLeast(1L) ?: 1L
+            return ordered.take(15).map { it ->
+                val r = UsageRepo.resolvePublic(this, it.uid)
+                val bgPct = if (it.tx > 0) (it.bgTx * 100 / it.tx).toInt() else 0
+                val flag = it.ratio >= 3f && it.bgTx * 2 >= it.tx
+                Row(
+                    r.first, r.second,
+                    "\u2191 " + UsageRepo.fmt(it.tx) + "   \u2193 " + UsageRepo.fmt(it.rx),
+                    "bg " + bgPct + "%  ·  " + String.format("%.1f", it.ratio) + "\u00d7 avg",
+                    (scaleBy(it).toFloat() / max.toFloat()),
+                    flag
+                )
+            }
+        }
+
+        rowsByFlag = build(items.sortedByDescending { it.ratio }) { it.tx }
+        rowsByVolume = build(items.sortedByDescending { it.tx + it.rx }) { it.tx + it.rx }
+        appsAdapter.submit(if (sortMode == 0) rowsByFlag else rowsByVolume)
     }
+
+
     private data class Row(
         val label: String,
         val pkg: String?,
-        val down: String,
-        val up: String,
-        val avgDown: String,
-        val avgUp: String,
-        val share: Float
+        val line1: String,
+        val line2: String,
+        val share: Float,
+        val flag: Boolean
     )
 
     private val iconCache = HashMap<String, android.graphics.drawable.Drawable?>()
@@ -327,9 +374,9 @@ class MainActivity : Activity() {
             val right = LinearLayout(this@MainActivity)
             right.orientation = LinearLayout.VERTICAL
             right.gravity = Gravity.END
-            val top = text("\u2193 " + it0.down + "   \u2191 " + it0.up, 12f, ink)
+            val top = text(it0.line1, 12f, ink)
             top.gravity = Gravity.END
-            val bottom = text("avg \u2193 " + it0.avgDown + "  \u2191 " + it0.avgUp, 11f, muted)
+            val bottom = text(it0.line2, 11f, if (it0.flag) Color.parseColor("#FF8080") else muted)
             bottom.gravity = Gravity.END
             bottom.setPadding(0, dp(2), 0, 0)
             right.addView(top)
@@ -341,7 +388,7 @@ class MainActivity : Activity() {
             val bar = LinearLayout(this@MainActivity)
             bar.orientation = LinearLayout.HORIZONTAL
             val fill = View(this@MainActivity)
-            fill.setBackgroundColor(accent)
+            fill.setBackgroundColor(if (it0.flag) Color.parseColor("#FF6B6B") else accent)
             val rest = View(this@MainActivity)
             rest.setBackgroundColor(trackColor)
             bar.addView(fill, LinearLayout.LayoutParams(0, dp(3), share.coerceAtLeast(0.001f)))
@@ -351,6 +398,27 @@ class MainActivity : Activity() {
             ).apply { topMargin = dp(7) })
             return wrap
         }
+    }
+
+    private fun paintChips() {
+        if (!::chipFlag.isInitialized) return
+        chipFlag.setTextColor(if (sortMode == 0) ink else dim)
+        chipVolume.setTextColor(if (sortMode == 1) ink else dim)
+        chipFlag.background = GradientDrawable().apply {
+            cornerRadius = dp(16).toFloat()
+            setColor(if (sortMode == 0) Color.parseColor("#26262E") else Color.TRANSPARENT)
+        }
+        chipVolume.background = GradientDrawable().apply {
+            cornerRadius = dp(16).toFloat()
+            setColor(if (sortMode == 1) Color.parseColor("#26262E") else Color.TRANSPARENT)
+        }
+    }
+
+    private fun setSort(mode: Int) {
+        if (sortMode == mode) return
+        sortMode = mode
+        paintChips()
+        appsAdapter.submit(if (mode == 0) rowsByFlag else rowsByVolume)
     }
 
 }

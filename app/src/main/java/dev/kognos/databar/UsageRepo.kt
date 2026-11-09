@@ -135,6 +135,51 @@ object UsageRepo {
         val bytes: Long get() = rx + tx
     }
 
+    /** Aliran data dipisah per uid + state (foreground / background). */
+    data class Flow(val uid: Int, val state: Int, val rx: Long, val tx: Long)
+
+    private fun collectState(
+        nsm: NetworkStatsManager, type: Int, start: Long, end: Long, out: HashMap<Long, Flow>
+    ) {
+        val stats = nsm.queryDetails(type, null, start, end)
+        try {
+            val b = NetworkStats.Bucket()
+            while (stats.hasNextBucket()) {
+                stats.getNextBucket(b)
+                val key = (b.uid.toLong() shl 32) or (b.state.toLong() and 0xffffffffL)
+                val prev = out[key]
+                out[key] = if (prev == null) {
+                    Flow(b.uid, b.state, b.rxBytes, b.txBytes)
+                } else {
+                    Flow(b.uid, b.state, prev.rx + b.rxBytes, prev.tx + b.txBytes)
+                }
+            }
+        } finally {
+            stats.close()
+        }
+    }
+
+    /** Byte per uid per state pada rentang [start]..[end]. */
+    fun flows(c: Context, start: Long, end: Long, wifi: Boolean): List<Flow> {
+        if (end <= start) return emptyList()
+        val nsm = c.getSystemService(NetworkStatsManager::class.java) ?: return emptyList()
+        val acc = HashMap<Long, Flow>()
+        try {
+            collectState(nsm, ConnectivityManager.TYPE_MOBILE, start, end, acc)
+        } catch (t: Throwable) {
+        }
+        if (wifi) {
+            try {
+                collectState(nsm, ConnectivityManager.TYPE_WIFI, start, end, acc)
+            } catch (t: Throwable) {
+            }
+        }
+        return acc.values.toList()
+    }
+
+    const val STATE_BG = 3
+    const val STATE_FG = 2
+
     private fun collect(
         nsm: NetworkStatsManager, type: Int, start: Long, end: Long, out: HashMap<Int, RxTx>
     ) {
@@ -177,6 +222,9 @@ object UsageRepo {
     }
 
     /** Nama tampilan untuk uid NetworkStats, termasuk uid sistem yang bukan aplikasi biasa. */
+    /** Nama + package untuk sebuah uid (dipakai UI). */
+    fun resolvePublic(c: Context, uid: Int): Pair<String, String?> = resolve(c, uid)
+
     private fun resolve(c: Context, uid: Int): Pair<String, String?> {
         when (uid) {
             -5 -> return "Hotspot / tethering" to null
