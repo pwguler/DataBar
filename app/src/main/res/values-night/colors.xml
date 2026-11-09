@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#000000</color>
-    <color name="surface">#141414</color>
-    <color name="ink">#FFFFFF</color>
-    <color name="ink_secondary">#8A8A8A</color>
+    <color name="background">#010101</color>
+    <color name="block">#171717</color>
+    <color name="bar">#6B6B6B</color>
     <color name="rule">#262626</color>
+    <color name="track">#2A2A2A</color>
+    <color name="signal">#F22C59</color>
+    <color name="ink">#FFFFFF</color>
     <color name="dot">#5C5C5C</color>
     <color name="dot_unlit">#171717</color>
-    <color name="signal">#FF4545</color>
     <color name="widget_background">#000000</color>
 </resources>

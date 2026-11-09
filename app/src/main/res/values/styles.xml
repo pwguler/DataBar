@@ -1,54 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Text roles from DESIGN.md, "Typography". -->
+<!-- Text roles from DESIGN.md, "Typography". No font family: the phone's own font. -->
 <resources>
-    <style name="TextAppearance.DataBar.Title" parent="">
-        <item name="android:fontFamily">@font/space_mono</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:letterSpacing">0.16</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">@color/ink</item>
+    <style name="TextAppearance.DataBar.Header" parent="">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
     <style name="TextAppearance.DataBar.Total" parent="">
-        <item name="android:fontFamily">@font/doto</item>
-        <item name="android:textSize">84sp</item>
-        <item name="android:letterSpacing">-0.01</item>
-        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">48sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
     <style name="TextAppearance.DataBar.Unit" parent="">
-        <item name="android:fontFamily">@font/space_mono</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/ink_secondary</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
     <style name="TextAppearance.DataBar.Summary" parent="">
-        <item name="android:fontFamily">@font/space_mono</item>
-        <item name="android:textSize">11sp</item>
-        <item name="android:letterSpacing">0.08</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">@color/ink_secondary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
-    <style name="TextAppearance.DataBar.Label" parent="TextAppearance.DataBar.Summary">
-        <item name="android:letterSpacing">0.14</item>
-    </style>
-    <style name="TextAppearance.DataBar.Value" parent="TextAppearance.DataBar.Summary">
-        <item name="android:letterSpacing">0.10</item>
-    </style>
-    <style name="TextAppearance.DataBar.Chip" parent="TextAppearance.DataBar.Value" />
-    <style name="TextAppearance.DataBar.Row" parent="">
-        <item name="android:fontFamily">@font/space_grotesk</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:textColor">@color/ink</item>
-    </style>
-    <style name="TextAppearance.DataBar.AppName" parent="TextAppearance.DataBar.Row">
+    <style name="TextAppearance.DataBar.BlockTitle" parent="">
         <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
+    <style name="TextAppearance.DataBar.Row" parent="">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+    <style name="TextAppearance.DataBar.Value" parent="TextAppearance.DataBar.Summary" />
+    <style name="TextAppearance.DataBar.Chip" parent="">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    <style name="TextAppearance.DataBar.AppName" parent="TextAppearance.DataBar.Row" />
     <style name="TextAppearance.DataBar.Traffic" parent="">
-        <item name="android:fontFamily">@font/space_mono</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
-    <style name="TextAppearance.DataBar.Baseline" parent="TextAppearance.DataBar.Traffic">
-        <item name="android:textSize">11sp</item>
-        <item name="android:textColor">@color/ink_secondary</item>
+    <style name="TextAppearance.DataBar.Baseline" parent="">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
 </resources>
