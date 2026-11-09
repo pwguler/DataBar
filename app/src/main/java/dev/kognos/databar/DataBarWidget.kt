@@ -6,7 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
+import android.graphics.Color
 import android.widget.RemoteViews
 
 class DataBarWidget : AppWidgetProvider() {
@@ -53,14 +53,11 @@ class DataBarWidget : AppWidgetProvider() {
 
             views.setImageViewBitmap(
                 R.id.ivBars,
-                BarChart.draw(
-                    daily.map { it.bytes },
-                    chartW,
-                    chartH,
-                    colorBar = color(context, R.color.w_bar),
-                    colorToday = color(context, R.color.w_bar_today),
-                    barRatio = 0.58f,
-                    horizontal = false
+                DotMatrix.draw(
+                    daily.map { it.bytes }, chartW, chartH, dm.density, daily.size - 1,
+                    unlit = Color.TRANSPARENT,
+                    dot = color(context, R.color.w_bar),
+                    ink = color(context, R.color.w_bar_today)
                 )
             )
             manager.updateAppWidget(widgetId, views)

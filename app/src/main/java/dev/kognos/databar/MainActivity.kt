@@ -25,7 +25,6 @@ class MainActivity : Activity() {
     private val muted = Color.parseColor("#9AA0A6")
     private val dim = Color.parseColor("#71767C")
     private val divider = Color.parseColor("#1FFFFFFF")
-    private val barIdle = Color.parseColor("#33333B")
     private val accent = Color.parseColor("#7FB4FF")
     private val trackColor = Color.parseColor("#26262E")
 
@@ -117,7 +116,7 @@ class MainActivity : Activity() {
 
 
         chart = ImageView(this)
-        chart.scaleType = ImageView.ScaleType.FIT_XY
+        chart.scaleType = ImageView.ScaleType.FIT_CENTER
         chart.setOnTouchListener { v, e ->
             if (e.action == android.view.MotionEvent.ACTION_UP && lastDaily.isNotEmpty()) {
                 val n = lastDaily.size
@@ -127,7 +126,7 @@ class MainActivity : Activity() {
             true
         }
         root.addView(chart, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, dp(104)
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(132)
         ).apply { topMargin = dp(14) })
 
         val gap = View(this)
@@ -237,14 +236,15 @@ class MainActivity : Activity() {
     }
 
     private fun drawChart(daily: List<UsageRepo.Day>) {
+        // Drawn at the view's own size so the dots stay round.
+        if (chart.width == 0) {
+            chart.post { drawChart(daily) }
+            return
+        }
         chart.setImageBitmap(
-            BarChart.draw(
-                daily.map { it.bytes },
-                dp(320), dp(104),
-                colorBar = barIdle,
-                colorToday = ink,
-                barRatio = 0.56f,
-                highlightIndex = selected
+            DotMatrix.draw(
+                daily.map { it.bytes }, chart.width, chart.height, resources.displayMetrics.density,
+                selected, unlit = surface, dot = dim, ink = ink
             )
         )
     }
