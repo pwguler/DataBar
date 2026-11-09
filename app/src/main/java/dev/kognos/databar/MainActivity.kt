@@ -2,6 +2,8 @@ package dev.kognos.databar
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
@@ -102,10 +104,12 @@ class MainActivity : Activity() {
         content.orientation = LinearLayout.VERTICAL
         content.setPadding(dp(12), 0, dp(12), dp(24))
 
-        // One UI's expanded app bar: the top 39.67% of the screen holds the title area.
+        // One UI's expanded app bar: at least the top 39.67% of the screen, growing when its text needs more.
         val header = LinearLayout(this)
         header.orientation = LinearLayout.VERTICAL
         header.gravity = Gravity.CENTER
+        header.minimumHeight = (resources.displayMetrics.heightPixels * 0.3967f).toInt()
+        header.setPadding(0, dp(24), 0, dp(24))
         header.addView(text("DataBar", R.style.TextAppearance_DataBar_Header))
         val hero = LinearLayout(this)
         hero.orientation = LinearLayout.HORIZONTAL
@@ -127,7 +131,7 @@ class MainActivity : Activity() {
             ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(14) })
         content.addView(header, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, (resources.displayMetrics.heightPixels * 0.3967f).toInt()
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ))
 
         chart = ImageView(this)
@@ -274,7 +278,7 @@ class MainActivity : Activity() {
 
         fun build(ordered: List<UsageRepo.Watch>, scaleBy: (UsageRepo.Watch) -> Long): List<Row> {
             val max = ordered.maxOfOrNull(scaleBy)?.coerceAtLeast(1L) ?: 1L
-            return ordered.take(15).map {
+            return ordered.take(MAX_ROWS).map {
                 val r = UsageRepo.resolve(this, it.uid)
                 Row(
                     r.first, r.second,
@@ -315,10 +319,25 @@ class MainActivity : Activity() {
         return dr
     }
 
-    /** At most 15 rows, so they are plain views inside the scrolling screen rather than a list. */
+    /** At most [MAX_ROWS] rows, so they are plain views inside the scrolling screen rather than a list. */
     private fun showRows(rows: List<Row>) {
         appRows.removeAllViews()
         for (it0 in rows) appRows.addView(appRow(it0))
+    }
+
+    /** A share as a rounded bar in the track color; any share shows at least a round dot, like a day's bar. */
+    private inner class ShareBar(private val share: Float, private val fill: Int) : View(this@MainActivity) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        override fun onDraw(canvas: Canvas) {
+            val w = width.toFloat()
+            val h = height.toFloat()
+            paint.color = track
+            canvas.drawRoundRect(0f, 0f, w, h, h / 2f, h / 2f, paint)
+            if (share <= 0f) return
+            paint.color = fill
+            canvas.drawRoundRect(0f, 0f, (share * w).coerceAtLeast(h).coerceAtMost(w), h, h / 2f, h / 2f, paint)
+        }
     }
 
     private fun appRow(it0: Row): View {
@@ -357,17 +376,10 @@ class MainActivity : Activity() {
         row.addView(right)
         wrap.addView(row)
 
-        // Any share shows at least a round dot, like a day's bar.
-        val share = if (it0.share > 0f) it0.share.coerceIn(0.015f, 1f) else 0f
-        val bar = LinearLayout(this)
-        bar.orientation = LinearLayout.HORIZONTAL
-        bar.background = rounded(track, dp(2))
-        bar.addView(View(this).apply { background = rounded(if (it0.flag) signal else accent, dp(2)) },
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, share))
-        bar.addView(View(this), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f - share))
-        wrap.addView(bar, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, dp(4)
-        ).apply { topMargin = dp(10) })
+        wrap.addView(
+            ShareBar(it0.share.coerceIn(0f, 1f), if (it0.flag) signal else accent),
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(4)).apply { topMargin = dp(10) }
+        )
         return wrap
     }
 
@@ -390,6 +402,10 @@ class MainActivity : Activity() {
         sortMode = mode
         paintChips()
         showRows(if (mode == 0) rowsByFlag else rowsByVolume)
+    }
+
+    private companion object {
+        const val MAX_ROWS = 15
     }
 
 }
