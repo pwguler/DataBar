@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- DESIGN.md, "Icon": three dot columns, the top dot of the tallest one in signal red. -->
+<!-- DESIGN.md, "Icon": three white pill bars on One UI blue. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M34.4,76 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M34.4,67 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M34.4,58 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,76 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,67 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,58 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M50.4,49 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,76 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,67 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,58 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,49 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z M66.4,40 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z"/>
-    <path android:fillColor="#D71920" android:pathData="M66.4,31 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0 Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M33,60.5 a5.5,5.5 0 0,1 11,0 V70.5 a5.5,5.5 0 0,1 -11,0 Z M48.5,49.5 a5.5,5.5 0 0,1 11,0 V70.5 a5.5,5.5 0 0,1 -11,0 Z M64,37.5 a5.5,5.5 0 0,1 11,0 V70.5 a5.5,5.5 0 0,1 -11,0 Z"/>
 </vector>
