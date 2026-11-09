@@ -138,6 +138,15 @@ object UsageRepo {
     /** Aliran data dipisah per uid + state (foreground / background). */
     data class Flow(val uid: Int, val state: Int, val rx: Long, val tx: Long)
 
+    /** One app's traffic on the watched day, against its own daily average over the span. */
+    data class Watch(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float) {
+        val bgPercent: Int get() = TODO("not implemented")
+        val flagged: Boolean get() = TODO("not implemented")
+    }
+
+    /** Apps that uploaded on the watched day, from per-state flows of that day and of the whole [days]-day span. */
+    fun watch(day: List<Flow>, span: List<Flow>, days: Int): List<Watch> = TODO("not implemented")
+
     private fun collectState(
         nsm: NetworkStatsManager, type: Int, start: Long, end: Long, out: HashMap<Long, Flow>
     ) {
