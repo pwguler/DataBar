@@ -9,6 +9,7 @@ DataBar looks like a Samsung app. The phone's theme is the source: on a Samsung 
 - Android's widget guide: `Theme.DeviceDefault.DayNight` on the widget root for the device colors, `@android:id/background` for the launch transition, and `system_app_widget_background_radius` on Android 12+.
 - Samsung's "Changes to the Home screen" support page for One UI 7: labels were added under widgets so that widgets line up with labeled app icons; App labels and Widget labels are switches under Settings > Home screen > App and widget style, and Widget labels needs App labels on. Techwiser's One UI 7 guide: Widget labels shows names under featured widgets from Samsung and Google. On the phone, One UI labels Clock and Digital Wellbeing but not DataBar.
 - `WallpaperColors.HINT_SUPPORTS_DARK_TEXT` (Android 12+): dark text is preferred over the wallpaper, and a launcher may set its text color to black.
+- Samsung Community answers: One UI sets its home-screen labels black on a light wallpaper and white on a dark one; the exact rule has changed between One UI versions.
 - Measured on the phone's screenshots (420 dpi: 12dp measures 31 px): One UI Home draws DataBar's widget at about 0.79 of its size (its 16dp padding measures 33 px), and its labels are set at about 11dp.
 
 ## Typography
