@@ -36,6 +36,8 @@ object UsageRepo {
         }
     }
 
+    // NetworkStatsManager takes the network type as ConnectivityManager.TYPE_MOBILE or TYPE_WIFI.
+    @Suppress("DEPRECATION")
     fun totalBytes(c: Context, start: Long, end: Long, wifi: Boolean): Long {
         if (end <= start) return 0L
         val nsm = c.getSystemService(NetworkStatsManager::class.java) ?: return 0L
@@ -147,6 +149,8 @@ object UsageRepo {
     }
 
     /** Bytes per uid and state over [start]..[end]. */
+    // NetworkStatsManager takes the network type as ConnectivityManager.TYPE_MOBILE or TYPE_WIFI.
+    @Suppress("DEPRECATION")
     fun flows(c: Context, start: Long, end: Long, wifi: Boolean): List<Flow> {
         if (end <= start) return emptyList()
         val nsm = c.getSystemService(NetworkStatsManager::class.java) ?: return emptyList()
