@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview image of Flagged apps for launchers without preview layouts: the tile at 4x2 with three
+     sample rows. A drawable cannot hold text, so names and numbers are rounded lines. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="150dp"
+    android:viewportWidth="320"
+    android:viewportHeight="150">
+    <path
+        android:fillColor="@color/block"
+        android:pathData="M26,0H294A26,26 0,0 1,320,26V124A26,26 0,0 1,294,150H26A26,26 0,0 1,0,124V26A26,26 0,0 1,26,0Z" />
+    <path
+        android:fillColor="@color/bar"
+        android:pathData="M16,51A10,10 0,1 1,36,51A10,10 0,1 1,16,51ZM16,75A10,10 0,1 1,36,75A10,10 0,1 1,16,75ZM16,99A10,10 0,1 1,36,99A10,10 0,1 1,16,99ZM48,47H124A4,4 0,0 1,128,51V51A4,4 0,0 1,124,55H48A4,4 0,0 1,44,51V51A4,4 0,0 1,48,47ZM48,71H80A4,4 0,0 1,84,75V75A4,4 0,0 1,80,79H48A4,4 0,0 1,44,75V75A4,4 0,0 1,48,71ZM48,95H104A4,4 0,0 1,108,99V99A4,4 0,0 1,104,103H48A4,4 0,0 1,44,99V99A4,4 0,0 1,48,95ZM217.5,47.5H262.5A3.5,3.5 0,0 1,266,51V51A3.5,3.5 0,0 1,262.5,54.5H217.5A3.5,3.5 0,0 1,214,51V51A3.5,3.5 0,0 1,217.5,47.5ZM217.5,71.5H262.5A3.5,3.5 0,0 1,266,75V75A3.5,3.5 0,0 1,262.5,78.5H217.5A3.5,3.5 0,0 1,214,75V75A3.5,3.5 0,0 1,217.5,71.5ZM217.5,95.5H262.5A3.5,3.5 0,0 1,266,99V99A3.5,3.5 0,0 1,262.5,102.5H217.5A3.5,3.5 0,0 1,214,99V99A3.5,3.5 0,0 1,217.5,95.5Z" />
+    <path
+        android:fillColor="@color/signal"
+        android:pathData="M277.5,47.5H300.5A3.5,3.5 0,0 1,304,51V51A3.5,3.5 0,0 1,300.5,54.5H277.5A3.5,3.5 0,0 1,274,51V51A3.5,3.5 0,0 1,277.5,47.5ZM277.5,71.5H300.5A3.5,3.5 0,0 1,304,75V75A3.5,3.5 0,0 1,300.5,78.5H277.5A3.5,3.5 0,0 1,274,75V75A3.5,3.5 0,0 1,277.5,71.5ZM277.5,95.5H300.5A3.5,3.5 0,0 1,304,99V99A3.5,3.5 0,0 1,300.5,102.5H277.5A3.5,3.5 0,0 1,274,99V99A3.5,3.5 0,0 1,277.5,95.5Z" />
+</vector>

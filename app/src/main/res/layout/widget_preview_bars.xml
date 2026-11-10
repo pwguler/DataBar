@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview of the bars widget: the tile with sample bars, tinted as in widget.xml. The picker shows
+     the widget's name, so the preview has no title. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:theme="@android:style/Theme.DeviceDefault.DayNight">
+
+    <FrameLayout
+        android:id="@android:id/background"
+        style="@style/Widget.DataBar.Tile">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:src="@drawable/preview_bars_days"
+            android:tint="@color/bar" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:src="@drawable/preview_bars_today"
+            android:tint="?android:attr/colorControlActivated" />
+    </FrameLayout>
+</LinearLayout>

@@ -9,4 +9,6 @@
     <color name="signal">#E60F40</color>
     <color name="widget_title">#FFFFFF</color>
     <color name="widget_title_dark_text">#000000</color>
+    <!-- One UI's primary blue for today's bar in the picker preview image, which has no theme to take the accent from. -->
+    <color name="preview_accent">#0381FE</color>
 </resources>

@@ -87,4 +87,37 @@
         <item name="android:text">@string/app_name</item>
         <item name="android:textAppearance">@style/TextAppearance.DataBar.WidgetTitle</item>
     </style>
+
+    <!-- A row of Flagged apps (DESIGN.md, "Widgets"), shared by the widget and its picker preview. -->
+    <style name="Widget.DataBar.FlagRow" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">@dimen/widget_row</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+    <style name="Widget.DataBar.FlagIcon" parent="">
+        <item name="android:layout_width">@dimen/widget_icon</item>
+        <item name="android:layout_height">@dimen/widget_icon</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+    <style name="Widget.DataBar.FlagName" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textAppearance">@style/TextAppearance.DataBar.WidgetApp</item>
+    </style>
+    <style name="Widget.DataBar.FlagUpload" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textAppearance">@style/TextAppearance.DataBar.WidgetUpload</item>
+    </style>
+    <style name="Widget.DataBar.FlagRatio" parent="Widget.DataBar.FlagUpload">
+        <item name="android:textAppearance">@style/TextAppearance.DataBar.WidgetRatio</item>
+    </style>
 </resources>

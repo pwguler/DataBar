@@ -5,6 +5,8 @@ import android.app.WallpaperColors
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.res.TypedArray
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
@@ -15,6 +17,7 @@ import android.util.Xml
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.RemoteViews
 import android.widget.TextView
@@ -82,7 +85,7 @@ class WidgetTest {
 
     private val providerAttrs = intArrayOf(
         android.R.attr.minWidth, android.R.attr.minHeight, android.R.attr.minResizeWidth, android.R.attr.minResizeHeight,
-        android.R.attr.previewLayout
+        android.R.attr.previewImage, android.R.attr.previewLayout
     ).sortedArray()
 
     /** The appwidget-provider attributes of [info], as the launcher reads them. */
@@ -91,6 +94,8 @@ class WidgetTest {
         while (parser.next() != XmlPullParser.START_TAG) Unit
         return app.obtainStyledAttributes(Xml.asAttributeSet(parser), providerAttrs)
     }
+
+    private fun TypedArray.res(attr: Int): Int = getResourceId(providerAttrs.indexOf(attr), 0)
 
     private fun TypedArray.dp(attr: Int): Float = getDimension(providerAttrs.indexOf(attr), 0f) / app.resources.displayMetrics.density
 
@@ -118,6 +123,7 @@ class WidgetTest {
     /** "DataBar" sits centered below the tile, uncut, and every text in the tile is whole and inside its padding. */
     private fun assertTitledTile(root: ViewGroup) {
         val tile = root.findViewById<View>(android.R.id.background)
+        assertTileTextsWhole(root)
         val title = all(root, TextView::class.java).single { it.text.toString() == "DataBar" }
         val t = bounds(title, root)
         assertTrue("the title is below the tile", t.top >= bounds(tile, root).bottom)
@@ -126,6 +132,11 @@ class WidgetTest {
         val ink = t.left + title.totalPaddingLeft + (title.layout.getLineLeft(0) + title.layout.getLineRight(0)) / 2f
         assertEquals("the title is centered", root.width / 2f, ink, 2f)
         assertEquals("the title is white without wallpaper colors", Color.WHITE, title.currentTextColor)
+    }
+
+    /** Every text in the tile is whole and inside its padding. */
+    private fun assertTileTextsWhole(root: ViewGroup) {
+        val tile = root.findViewById<View>(android.R.id.background)
         val tb = bounds(tile, root)
         val inner = Rect(tb.left + tile.paddingLeft, tb.top + tile.paddingTop, tb.right - tile.paddingRight, tb.bottom - tile.paddingBottom)
         for (text in all(tile, TextView::class.java).filter { visible(it, root) && it.text.isNotEmpty() }) {
@@ -161,6 +172,45 @@ class WidgetTest {
         val root = place(DataBarWidget::class.java, R.layout.widget, 180, 90)
         assertTitledTile(root)
         assertBarsFillTheTile(root)
+    }
+
+    /** The picker preview of [info], applied as a launcher applies it, at [widthDp] x [heightDp]. */
+    private fun preview(info: Int, widthDp: Int, heightDp: Int): ViewGroup {
+        val layout = provider(info).res(android.R.attr.previewLayout)
+        assertTrue("no previewLayout", layout != 0)
+        return measured(RemoteViews(app.packageName, layout).apply(app, FrameLayout(app)) as ViewGroup, widthDp, heightDp)
+    }
+
+    /** The fallback preview image draws the tile and something on it. */
+    private fun assertPreviewImage(info: Int) {
+        val id = provider(info).res(android.R.attr.previewImage)
+        assertTrue("no previewImage", id != 0)
+        val image = app.getDrawable(id)!!
+        val bmp = Bitmap.createBitmap(image.intrinsicWidth, image.intrinsicHeight, Bitmap.Config.ARGB_8888)
+        image.setBounds(0, 0, bmp.width, bmp.height)
+        image.draw(Canvas(bmp))
+        val solid = (0 until bmp.width).flatMap { x -> (0 until bmp.height).map { y -> bmp.getPixel(x, y) } }
+            .filter { Color.alpha(it) == 255 }.toSet()
+        assertTrue("the preview image has only ${solid.size} solid colors", solid.size >= 3)
+    }
+
+    @Test
+    fun barsWidgetHasAPickerPreview() {
+        val root = preview(R.xml.widget_info, 180, 90)
+        assertTileTextsWhole(root)
+        val bars = all(root.findViewById(android.R.id.background), ImageView::class.java)
+        assertEquals(2, bars.count { it.drawable != null && it.drawable.intrinsicWidth > 0 })
+        assertPreviewImage(R.xml.widget_info)
+    }
+
+    @Test
+    fun flaggedWidgetHasAPickerPreview() {
+        val root = preview(R.xml.widget_flagged_info, 340, 200)
+        assertTileTextsWhole(root)
+        val ratios = tileTexts(root).filter { it.endsWith("\u00d7") }
+        assertEquals(3, ratios.size)
+        assertEquals(ratios.sortedByDescending { it.dropLast(1).replace(',', '.').toFloat() }, ratios)
+        assertPreviewImage(R.xml.widget_flagged_info)
     }
 
     private fun watch(uid: Int, ratio: Float, bgTx: Long = 600) = UsageRepo.Watch(uid, tx = 1000, rx = 0, bgTx = bgTx, ratio = ratio)

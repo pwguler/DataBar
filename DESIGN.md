@@ -49,6 +49,7 @@ Rows have minimum heights, not fixed ones, so they grow with the phone's font si
 | `signal` | `#E60F40` | `#F22C59` | flagged apps, missing Usage access |
 | `widget_title` | `#FFFFFF` | `#FFFFFF` | widget title over the wallpaper |
 | `widget_title_dark_text` | `#000000` | `#000000` | widget title when the wallpaper prefers dark text |
+| `preview_accent` | `#0381FE` | `#0381FE` | today's bar in the picker preview image |
 
 From the theme: `textColorPrimary`, `textColorSecondary` and the accent, `colorControlActivated`: the color the system draws checked controls with. On a Samsung phone `colorAccent` is a different color, so it is not used. The accent marks the selected day: its bar, the share bars of its apps, the selected chip, the switch when on, and today's bar in the widget. `signal` marks only what needs attention.
 
@@ -84,6 +85,7 @@ Two widgets, each a tile with the title "DataBar" below it, the way One UI label
 - Each tile is drawn at every size the launcher lists; before Android 12, at the portrait or landscape size of the cell.
 - **DataBar** (2x1): the bars as in "Bars"; today is the selected day.
 - **Flagged apps** (4x2, and never shorter: one home-screen row leaves room for one row of apps at most): today's flagged apps, highest × first, one row each, at least 24 tall: a 20 icon, 8 to the name, then on the right the upload today ("↑ 188 MB") and the ratio ("5,5×"), 8 apart. As many rows as fit. When some flagged apps don't fit, the last row says "+N more", or "N flagged" when it is the only row. With nothing flagged the tile says "Nothing flagged today"; without Usage access, "Usage access needed".
+- Picker previews: each widget shows its tile with sample content and no title, since the picker shows the widget's name. The preview layout uses the widget's styles and the device theme. Launchers without preview layouts show a preview image instead: the same tile, today's bar in `preview_accent`, and rounded lines in place of text.
 
 ## Icon
 

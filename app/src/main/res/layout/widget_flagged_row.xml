@@ -1,40 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="center_vertical"
-    android:minHeight="@dimen/widget_row"
-    android:orientation="horizontal">
+    style="@style/Widget.DataBar.FlagRow">
 
     <ImageView
         android:id="@+id/icon"
-        android:layout_width="@dimen/widget_icon"
-        android:layout_height="@dimen/widget_icon"
-        android:importantForAccessibility="no" />
+        style="@style/Widget.DataBar.FlagIcon" />
 
     <TextView
         android:id="@+id/name"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_weight="1"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textAppearance="@style/TextAppearance.DataBar.WidgetApp" />
+        style="@style/Widget.DataBar.FlagName" />
 
     <TextView
         android:id="@+id/upload"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:maxLines="1"
-        android:textAppearance="@style/TextAppearance.DataBar.WidgetUpload" />
+        style="@style/Widget.DataBar.FlagUpload" />
 
     <TextView
         android:id="@+id/ratio"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:maxLines="1"
-        android:textAppearance="@style/TextAppearance.DataBar.WidgetRatio" />
+        style="@style/Widget.DataBar.FlagRatio" />
 </LinearLayout>

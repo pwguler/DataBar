@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview: today's sample bar. The preview layout tints it with the device accent. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="148dp"
+    android:height="42dp"
+    android:viewportWidth="148"
+    android:viewportHeight="42">
+    <path
+        android:fillColor="@color/preview_accent"
+        android:pathData="M144.3,1.23A1.23,1.23 0,0 1,146.77,1.23L146.77,40.77A1.23,1.23 0,0 1,144.3,40.77Z" />
+</vector>

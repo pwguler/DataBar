@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview image of the bars widget for launchers without preview layouts: the tile with the sample
+     bars inside its 16dp padding. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="180dp" android:height="74dp" />
+            <corners android:radius="@dimen/widget_radius" />
+            <solid android:color="@color/block" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/preview_bars_days" android:left="16dp" android:top="16dp" android:right="16dp" android:bottom="16dp" />
+    <item android:drawable="@drawable/preview_bars_today" android:left="16dp" android:top="16dp" android:right="16dp" android:bottom="16dp" />
+</layer-list>

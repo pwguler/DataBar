@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview of Flagged apps: the tile with three sample rows. The picker shows the widget's name, so
+     the preview has no title. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:theme="@android:style/Theme.DeviceDefault.DayNight">
+
+    <FrameLayout
+        android:id="@android:id/background"
+        style="@style/Widget.DataBar.Tile">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <LinearLayout style="@style/Widget.DataBar.FlagRow">
+                <ImageView style="@style/Widget.DataBar.FlagIcon" android:src="@android:drawable/sym_def_app_icon" />
+                <TextView style="@style/Widget.DataBar.FlagName" android:text="Chrome" />
+                <TextView style="@style/Widget.DataBar.FlagUpload" android:text="&#8593; 188 MB" />
+                <TextView style="@style/Widget.DataBar.FlagRatio" android:text="5,5&#215;" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/Widget.DataBar.FlagRow">
+                <ImageView style="@style/Widget.DataBar.FlagIcon" android:src="@android:drawable/sym_def_app_icon" />
+                <TextView style="@style/Widget.DataBar.FlagName" android:text="X" />
+                <TextView style="@style/Widget.DataBar.FlagUpload" android:text="&#8593; 266 MB" />
+                <TextView style="@style/Widget.DataBar.FlagRatio" android:text="3,2&#215;" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/Widget.DataBar.FlagRow">
+                <ImageView style="@style/Widget.DataBar.FlagIcon" android:src="@android:drawable/sym_def_app_icon" />
+                <TextView style="@style/Widget.DataBar.FlagName" android:text="Photos" />
+                <TextView style="@style/Widget.DataBar.FlagUpload" android:text="&#8593; 92 MB" />
+                <TextView style="@style/Widget.DataBar.FlagRatio" android:text="3,0&#215;" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>
