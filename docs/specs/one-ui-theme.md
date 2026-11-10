@@ -17,7 +17,7 @@ The app screen, two home-screen widgets (the 30-day bars and today's flagged app
 - AC-2: A day has no bar for zero bytes, at least a round dot as tall as the bar is wide for any traffic, the full height for the largest day, and a proportional height in between.
 - AC-3: The debug build succeeds, and the APK reports version 11.2 with version code 40.
 - AC-4: On the phone, in light and in dark mode, the app screen, both widgets and the icon match `DESIGN.md`: the theme's font, one accent (the switch's), the centered One UI header, the blocks, the One UI switch, and "DataBar" below each widget like One UI's own widget labels. The widgets follow a dark-mode switch without the app being opened, and the bars keep round ends after a resize. Apps that sync in the background show a non-zero bg %. Judge: `rubric`, on screenshots from the phone.
-- AC-5: The Flagged apps widget lists today's flagged apps, highest × first, as many as fit; when some don't fit, the last row says "+N more" ("N flagged" when it is the only row). With nothing flagged it says "Nothing flagged today", and without Usage access "Usage access needed". Both widgets show "DataBar" below the tile.
+- AC-5: The Flagged apps widget lists today's flagged apps, highest × first, as many as fit; when some don't fit, the last row says "+N more" ("N flagged" when it is the only row). With nothing flagged it says "Nothing flagged today", and without Usage access "Usage access needed". Both widgets show "DataBar" below the tile. Flagged apps is added 4x2 and cannot be made shorter than 2 rows, and at its smallest size it shows app rows.
 - AC-6: The × values use a decimal comma, like the byte amounts.
 
 ## Verification
@@ -25,4 +25,4 @@ JAVA_HOME=~/.local/jdk ANDROID_HOME=~/.local/android ~/.local/gradle-8.7/bin/gra
 JAVA_HOME=~/.local/jdk ANDROID_HOME=~/.local/android ~/.local/gradle-8.7/bin/gradle assembleDebug --offline
 ~/.local/android/build-tools/34.0.0/aapt2 dump badging app/build/outputs/apk/debug/app-debug.apk
 rubric: AC-4, on screenshots from the phone
-Demo: install `dist/DataBar-11.2.apk`, open the app in light and in dark mode, add the DataBar widget at 2x1 and the Flagged apps widget at 4x1, switch dark mode from quick settings with the app closed, then resize the widgets.
+Demo: install `dist/DataBar-11.2.apk`, open the app in light and in dark mode, add the DataBar widget at 2x1 and the Flagged apps widget at 4x2, switch dark mode from quick settings with the app closed, then resize the widgets.

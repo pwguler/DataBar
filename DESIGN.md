@@ -83,7 +83,7 @@ Two widgets, each a tile with the title "DataBar" below it, the way One UI label
 - Title: centered, 2 below the tile. Its color is chosen when the widget updates: every 30 minutes and when DataBar opens.
 - Each tile is drawn at every size the launcher lists; before Android 12, at the portrait or landscape size of the cell.
 - **DataBar** (2x1): the bars as in "Bars"; today is the selected day.
-- **Flagged apps** (4x1): today's flagged apps, highest × first, one row each, at least 24 tall: a 20 icon, 8 to the name, then on the right the upload today ("↑ 188 MB") and the ratio ("5,5×"), 8 apart. As many rows as fit. When some flagged apps don't fit, the last row says "+N more", or "N flagged" when it is the only row. With nothing flagged the tile says "Nothing flagged today"; without Usage access, "Usage access needed".
+- **Flagged apps** (4x2, and never shorter: one home-screen row leaves room for one row of apps at most): today's flagged apps, highest × first, one row each, at least 24 tall: a 20 icon, 8 to the name, then on the right the upload today ("↑ 188 MB") and the ratio ("5,5×"), 8 apart. As many rows as fit. When some flagged apps don't fit, the last row says "+N more", or "N flagged" when it is the only row. With nothing flagged the tile says "Nothing flagged today"; without Usage access, "Usage access needed".
 
 ## Icon
 

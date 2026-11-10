@@ -4,12 +4,14 @@ import android.app.AppOpsManager
 import android.app.WallpaperColors
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.res.TypedArray
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.os.Process
 import android.util.SizeF
+import android.util.Xml
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,6 +28,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.xmlpull.v1.XmlPullParser
 
 /** Widgets as an Android 12+ launcher places them: at one listed size, laid out with real text measurement. */
 @RunWith(RobolectricTestRunner::class)
@@ -76,6 +79,31 @@ class WidgetTest {
     private fun tileTexts(root: ViewGroup): List<String> =
         all(root.findViewById(android.R.id.background), TextView::class.java)
             .filter { visible(it, root) && it.text.isNotEmpty() }.map { it.text.toString() }
+
+    private val providerAttrs = intArrayOf(
+        android.R.attr.minWidth, android.R.attr.minHeight, android.R.attr.minResizeWidth, android.R.attr.minResizeHeight,
+        android.R.attr.previewLayout
+    ).sortedArray()
+
+    /** The appwidget-provider attributes of [info], as the launcher reads them. */
+    private fun provider(info: Int): TypedArray {
+        val parser = app.resources.getXml(info)
+        while (parser.next() != XmlPullParser.START_TAG) Unit
+        return app.obtainStyledAttributes(Xml.asAttributeSet(parser), providerAttrs)
+    }
+
+    private fun TypedArray.dp(attr: Int): Float = getDimension(providerAttrs.indexOf(attr), 0f) / app.resources.displayMetrics.density
+
+    /** The smallest size in dp a launcher may give the widget: a resize minimum counts only below the default minimum. */
+    private fun smallest(info: Int): Pair<Int, Int> {
+        val p = provider(info)
+        fun min(default: Int, resize: Int): Int {
+            val d = p.dp(default)
+            val r = p.dp(resize)
+            return (if (r > 0f) minOf(r, d) else d).toInt()
+        }
+        return min(android.R.attr.minWidth, android.R.attr.minResizeWidth) to min(android.R.attr.minHeight, android.R.attr.minResizeHeight)
+    }
 
     private fun bounds(v: View, root: View): Rect {
         val r = Rect(0, 0, v.width, v.height)
@@ -170,6 +198,14 @@ class WidgetTest {
         val texts = tileTexts(root)
         val shown = texts.count { it.endsWith("\u00d7") }
         assertEquals("+${4 - shown} more", texts.last())
+    }
+
+    @Test
+    fun flaggedWidgetShowsAppsAtItsSmallestSize() {
+        val (w, h) = smallest(R.xml.widget_flagged_info)
+        val root = flagged(today, w, h)
+        assertTitledTile(root)
+        assertTrue("app rows at ${w}x$h dp: ${tileTexts(root)}", tileTexts(root).any { it.endsWith("\u00d7") })
     }
 
     @Test
