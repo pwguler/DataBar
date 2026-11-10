@@ -150,6 +150,20 @@ object UsageRepo {
         }
     }
 
+    /** [watch] for today against the last [BARS] days, the span the app uses for today. */
+    fun watchToday(c: Context, wifi: Boolean): List<Watch> {
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = now
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val today = cal.timeInMillis
+        cal.add(Calendar.DAY_OF_MONTH, -(BARS - 1))
+        return watch(flows(c, today, now, wifi), flows(c, cal.timeInMillis, now, wifi), BARS)
+    }
+
     private fun collectState(
         nsm: NetworkStatsManager, type: Int, start: Long, end: Long, out: HashMap<Long, Flow>
     ) {

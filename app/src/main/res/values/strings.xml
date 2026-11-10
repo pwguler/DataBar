@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DataBar</string>
+    <string name="widget_flagged">Flagged apps</string>
     <string name="widget_desc">Pemakaian data harian + total bulan ini</string>
 </resources>

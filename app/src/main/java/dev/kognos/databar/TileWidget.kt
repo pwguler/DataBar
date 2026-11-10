@@ -39,27 +39,26 @@ abstract class TileWidget<T> : AppWidgetProvider() {
         render(context, manager, widgetId)
     }
 
+    /** The widget for [data] at one size in dp. */
+    internal fun views(context: Context, data: T, widthDp: Float, heightDp: Float): RemoteViews {
+        val views = RemoteViews(context.packageName, layout)
+        val tap = PendingIntent.getActivity(
+            context, 0, Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(android.R.id.background, tap)
+        views.setTextColor(R.id.title, titleColor(context, wallpaperHints(context)))
+        val res = context.resources
+        val density = res.displayMetrics.density
+        val padding = 2 * res.getDimension(R.dimen.widget_padding)
+        val title = lineHeight(context, R.style.TextAppearance_DataBar_WidgetTitle) + res.getDimensionPixelSize(R.dimen.widget_title_gap)
+        fill(context, views, data, (widthDp * density - padding).toInt(), (heightDp * density - padding - title).toInt())
+        return views
+    }
+
     private fun render(context: Context, manager: AppWidgetManager, widgetId: Int) {
         val data = load(context)
-        val color = titleColor(context, wallpaperHints(context))
         val res = context.resources
-        val titleHeight = lineHeight(context, R.style.TextAppearance_DataBar_WidgetTitle) +
-            res.getDimensionPixelSize(R.dimen.widget_title_gap)
-        val padding = 2 * res.getDimension(R.dimen.widget_padding)
-
-        fun at(widthDp: Float, heightDp: Float): RemoteViews {
-            val views = RemoteViews(context.packageName, layout)
-            val tap = PendingIntent.getActivity(
-                context, 0, Intent(context, MainActivity::class.java),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(android.R.id.background, tap)
-            views.setTextColor(R.id.title, color)
-            val density = res.displayMetrics.density
-            fill(context, views, data, (widthDp * density - padding).toInt(), (heightDp * density - padding - titleHeight).toInt())
-            return views
-        }
-
         val opts = manager.getAppWidgetOptions(widgetId) ?: Bundle()
         // Android 12+ launchers list the exact sizes, typically portrait and landscape; the host picks one.
         val sizes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -69,7 +68,7 @@ abstract class TileWidget<T> : AppWidgetProvider() {
             null
         }
         val views = if (!sizes.isNullOrEmpty()) {
-            RemoteViews(sizes.associateWith { at(it.width, it.height) })
+            RemoteViews(sizes.associateWith { views(context, data, it.width, it.height) })
         } else {
             // Cells are narrowest in portrait and shortest in landscape.
             val portrait = res.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
@@ -79,7 +78,7 @@ abstract class TileWidget<T> : AppWidgetProvider() {
             val h = opts.getInt(
                 if (portrait) AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT else AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40
             )
-            at(w.toFloat(), h.toFloat())
+            views(context, data, w.toFloat(), h.toFloat())
         }
         manager.updateAppWidget(widgetId, views)
     }
@@ -89,7 +88,7 @@ abstract class TileWidget<T> : AppWidgetProvider() {
         /** Redraws every placed DataBar widget. */
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context) ?: return
-            for (widget in listOf<TileWidget<*>>(DataBarWidget())) {
+            for (widget in listOf<TileWidget<*>>(DataBarWidget(), FlaggedWidget())) {
                 for (id in manager.getAppWidgetIds(ComponentName(context, widget.javaClass))) {
                     widget.render(context, manager, id)
                 }
@@ -111,7 +110,7 @@ abstract class TileWidget<T> : AppWidgetProvider() {
         }
 
         /** Height in px of one line of [appearance] as the launcher lays it out: the same font, size and font scale. */
-        private fun lineHeight(context: Context, appearance: Int): Int {
+        internal fun lineHeight(context: Context, appearance: Int): Int {
             val probe = TextView(ContextThemeWrapper(context, android.R.style.Theme_DeviceDefault_DayNight))
             probe.setTextAppearance(appearance)
             probe.text = context.getString(R.string.app_name)

@@ -45,6 +45,23 @@
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/widget_title</item>
     </style>
+    <style name="TextAppearance.DataBar.WidgetApp">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+    <style name="TextAppearance.DataBar.WidgetUpload">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    <style name="TextAppearance.DataBar.WidgetRatio">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/signal</item>
+    </style>
+    <style name="TextAppearance.DataBar.WidgetMessage">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
     <style name="TextAppearance.DataBar.Baseline">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">?android:attr/textColorSecondary</item>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The last row when some flagged apps don't fit; its text starts where the app names do. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/more"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:ellipsize="end"
+    android:gravity="center_vertical"
+    android:maxLines="1"
+    android:minHeight="@dimen/widget_row"
+    android:paddingStart="28dp"
+    android:textAppearance="@style/TextAppearance.DataBar.WidgetMessage" />

@@ -3,4 +3,6 @@
     <dimen name="widget_padding">16dp</dimen>
     <dimen name="widget_radius">26dp</dimen>
     <dimen name="widget_title_gap">2dp</dimen>
+    <dimen name="widget_row">24dp</dimen>
+    <dimen name="widget_icon">20dp</dimen>
 </resources>
