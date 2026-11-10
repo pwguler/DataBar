@@ -8,7 +8,6 @@ The app screen, two home-screen widgets (the 30-day bars and today's flagged app
 - The widget title does not follow One UI's Widget labels switch: it shows whether the switch is on or off.
 - No bundled fonts and no INTERNET permission.
 - No in-app theme picker, and backgrounds do not follow the color palette.
-- `DonutChart.kt` and the billing-cycle code in `UsageRepo.kt` (`cycleDay`, `cycleStart`, `daily`, `KEY_CYCLE_DAY`) stay as they are.
 - minSdk 29 and targetSdk 34 stay.
 - The selected day and the sort mode are not kept when the activity is recreated, the same as on rotation in 9.1.
 
