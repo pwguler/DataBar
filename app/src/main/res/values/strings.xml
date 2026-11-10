@@ -2,5 +2,5 @@
 <resources>
     <string name="app_name">DataBar</string>
     <string name="widget_flagged">Flagged apps</string>
-    <string name="widget_desc">Pemakaian data harian + total bulan ini</string>
+    <string name="widget_desc">Data used each day over the last 30 days</string>
 </resources>

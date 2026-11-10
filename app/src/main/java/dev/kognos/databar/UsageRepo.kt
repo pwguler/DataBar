@@ -11,8 +11,8 @@ import java.util.Calendar
 import java.util.Locale
 
 /**
- * Sumber data: NetworkStatsManager (butuh izin "Usage access" / PACKAGE_USAGE_STATS).
- * Tidak ada izin INTERNET di app ini: semua angka dihitung lokal, tidak ada yang dikirim keluar.
+ * Data source: NetworkStatsManager, which needs Usage access (PACKAGE_USAGE_STATS).
+ * The app has no INTERNET permission: every number is computed on the phone and nothing leaves it.
  */
 object UsageRepo {
 
@@ -44,7 +44,7 @@ object UsageRepo {
             val b = nsm.querySummaryForDevice(ConnectivityManager.TYPE_MOBILE, null, start, end)
             sum += b.rxBytes + b.txBytes
         } catch (t: Throwable) {
-            // SecurityException kalau izin usage access belum diberikan
+            // SecurityException until Usage access is granted
         }
         if (wifi) {
             try {
@@ -58,7 +58,7 @@ object UsageRepo {
 
     data class Day(val start: Long, val bytes: Long)
 
-    /** [days] hari terakhir (termasuk hari ini), terlepas dari siklus tagihan. */
+    /** The last [days] days, today included. */
     fun dailyLast(c: Context, days: Int, wifi: Boolean): List<Day> {
         val out = ArrayList<Day>()
         val now = System.currentTimeMillis()
@@ -81,7 +81,7 @@ object UsageRepo {
         return out
     }
 
-    /** Aliran data dipisah per uid + state (foreground / background). */
+    /** Traffic of one uid in one state (foreground or background). */
     data class Flow(val uid: Int, val state: Int, val rx: Long, val tx: Long)
 
     /** One app's traffic on the watched day, against its own daily average over the span. */
@@ -146,7 +146,7 @@ object UsageRepo {
         }
     }
 
-    /** Byte per uid per state pada rentang [start]..[end]. */
+    /** Bytes per uid and state over [start]..[end]. */
     fun flows(c: Context, start: Long, end: Long, wifi: Boolean): List<Flow> {
         if (end <= start) return emptyList()
         val nsm = c.getSystemService(NetworkStatsManager::class.java) ?: return emptyList()
@@ -166,7 +166,7 @@ object UsageRepo {
 
     private var uidLabels: HashMap<Int, Pair<String, String?>>? = null
 
-    /** Peta uid -> nama app, dibangun sekali dari semua aplikasi terpasang. */
+    /** Map of uid to app name, built once from all installed apps. */
     @Synchronized
     private fun uidMap(c: Context): HashMap<Int, Pair<String, String?>> {
         uidLabels?.let { return it }
@@ -186,7 +186,7 @@ object UsageRepo {
         return map
     }
 
-    /** Nama tampilan + package untuk uid NetworkStats, termasuk uid sistem yang bukan aplikasi biasa. */
+    /** Display name and package of a NetworkStats uid, including system uids that are not regular apps. */
     fun resolve(c: Context, uid: Int): Pair<String, String?> {
         when (uid) {
             -5 -> return "Hotspot / tethering" to null
@@ -215,7 +215,7 @@ object UsageRepo {
         return "System uid " + uid to null
     }
 
-    /** Angka & satuan terpisah, desimal pakai koma (gaya Indonesia). */
+    /** Number and unit apart, with a decimal comma. */
     fun fmtParts(bytes: Long): Pair<String, String> {
         val kb = 1024.0
         val mb = kb * 1024.0
