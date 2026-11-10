@@ -6,6 +6,7 @@ import android.os.Process
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,7 +17,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Real text measurement on a phone-sized screen: no text may be cut off or stick out of its parent. */
+/** Real text measurement on a phone-sized screen. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h780dp-xxhdpi")
@@ -28,15 +29,19 @@ class MainActivityLayoutTest {
         else -> emptyList()
     }
 
-    private fun assertNothingClipped() {
+    private fun shownTexts(): List<TextView> {
         val app = RuntimeEnvironment.getApplication()
         shadowOf(app.getSystemService(AppOpsManager::class.java)).setMode(
             AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), app.packageName, AppOpsManager.MODE_ALLOWED
         )
         val activity = Robolectric.buildActivity(MainActivity::class.java).setup().visible().get()
         shadowOf(Looper.getMainLooper()).idle()
+        return texts(activity.window.decorView).filter { it.isShown && it.text.isNotEmpty() }
+    }
 
-        val shown = texts(activity.window.decorView).filter { it.isShown && it.text.isNotEmpty() }
+    /** No text may be cut off or stick out of its parent. */
+    private fun assertNothingClipped() {
+        val shown = shownTexts()
         assertTrue("expected the header, settings and chips", shown.size >= 8)
         for (t in shown) {
             val layout = t.layout
@@ -57,4 +62,19 @@ class MainActivityLayoutTest {
     @Test
     @Config(fontScale = 1.3f)
     fun nothingIsCutOffAtALargeFontSize() = assertNothingClipped()
+
+    @Test
+    fun headerLinesShareOneCenter() {
+        val header = shownTexts().first { it.text.toString() == "DataBar" }.parent as ViewGroup
+        for (i in 0 until header.childCount) {
+            val line = header.getChildAt(i)
+            // Where the ink is: a full-width TextView can still draw its text at the start.
+            val center = if (line is TextView) {
+                line.left + line.totalPaddingLeft + (line.layout.getLineLeft(0) + line.layout.getLineRight(0)) / 2f
+            } else {
+                line.left + line.width / 2f
+            }
+            assertEquals("header line $i", header.width / 2f, center, 2f)
+        }
+    }
 }

@@ -109,7 +109,9 @@ class MainActivity : Activity() {
         header.orientation = LinearLayout.VERTICAL
         header.gravity = Gravity.CENTER
         header.setPadding(0, dp(32), 0, dp(24))
-        header.addView(text("DataBar", R.style.TextAppearance_DataBar_Header))
+        header.addView(text("DataBar", R.style.TextAppearance_DataBar_Header), LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
         val hero = LinearLayout(this)
         hero.orientation = LinearLayout.HORIZONTAL
         heroNumber = text("\u2014", R.style.TextAppearance_DataBar_Total)
