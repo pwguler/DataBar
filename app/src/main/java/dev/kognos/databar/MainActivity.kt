@@ -284,7 +284,7 @@ class MainActivity : Activity() {
                 Row(
                     r.first, r.second,
                     "\u2191 " + UsageRepo.fmt(it.tx) + "   \u2193 " + UsageRepo.fmt(it.rx),
-                    "bg " + it.bgPercent + "%  \u00b7  " + String.format("%.1f", it.ratio) + "\u00d7 avg",
+                    "bg " + it.bgPercent + "%  \u00b7  " + UsageRepo.fmtRatio(it.ratio) + " avg",
                     (scaleBy(it).toFloat() / max.toFloat()),
                     it.flagged
                 )
@@ -355,7 +355,7 @@ class MainActivity : Activity() {
         row.addView(icon, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
             marginEnd = dp(12)
         })
-        iconFor(it0.pkg)?.let { icon.setImageDrawable(it) }
+        icon.setImageDrawable(iconFor(it0.pkg) ?: packageManager.defaultActivityIcon)
 
         val name = text(it0.label, R.style.TextAppearance_DataBar_AppName)
         name.maxLines = 1

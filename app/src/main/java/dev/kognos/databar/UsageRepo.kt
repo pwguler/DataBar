@@ -266,4 +266,6 @@ object UsageRepo {
             else -> "$bytes B"
         }
     }
+
+    fun fmtRatio(ratio: Float): String = String.format(Locale.US, "%.1f", ratio).replace('.', ',') + "\u00d7"
 }
