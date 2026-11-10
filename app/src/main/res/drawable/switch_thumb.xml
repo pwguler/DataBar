@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Switch sizes its track from the thumb: a 20 x 22dp thumb with no padding or optical insets gives the
+     40 x 22dp track. The dot sits in a layer-list; an InsetDrawable's insets would count as padding and
+     optical insets, and Switch would shrink the track by them. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="2dp" android:right="2dp" android:top="3dp" android:bottom="3dp">
+        <shape android:shape="oval">
+            <size android:width="16dp" android:height="16dp" />
+            <solid android:color="@android:color/white" />
+        </shape>
+    </item>
+</layer-list>

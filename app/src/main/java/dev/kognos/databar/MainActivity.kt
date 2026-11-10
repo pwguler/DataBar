@@ -26,7 +26,7 @@ class MainActivity : Activity() {
     private val rule by lazy { getColor(R.color.rule) }
     private val track by lazy { getColor(R.color.track) }
     private val signal by lazy { getColor(R.color.signal) }
-    private val accent by lazy { themeColor(android.R.attr.colorAccent) }
+    private val accent by lazy { themeColor(android.R.attr.colorControlActivated) } // the switch's color; Samsung's colorAccent differs
     private val textSecondary by lazy { themeColor(android.R.attr.textColorSecondary) }
 
     private lateinit var heroNumber: TextView
@@ -151,6 +151,11 @@ class MainActivity : Activity() {
 
         val settings = block(content, 4, top = 12)
         val wifiSwitch = Switch(this)
+        wifiSwitch.thumbDrawable = getDrawable(R.drawable.switch_thumb)
+        wifiSwitch.trackDrawable = getDrawable(R.drawable.switch_track)
+        wifiSwitch.thumbTintList = null
+        wifiSwitch.trackTintList = null
+        wifiSwitch.switchMinWidth = dp(40)
         wifiSwitch.isChecked = UsageRepo.includeWifi(this)
         wifiSwitch.setOnCheckedChangeListener { _, checked ->
             UsageRepo.prefs(this).edit().putBoolean(UsageRepo.KEY_WIFI, checked).apply()
