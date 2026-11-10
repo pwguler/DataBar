@@ -7,4 +7,6 @@
     <color name="rule">#E6E6E6</color>
     <color name="track">#EBEBEB</color>
     <color name="signal">#E60F40</color>
+    <color name="widget_title">#FFFFFF</color>
+    <color name="widget_title_dark_text">#000000</color>
 </resources>

@@ -161,7 +161,7 @@ class MainActivity : Activity() {
             UsageRepo.prefs(this).edit().putBoolean(UsageRepo.KEY_WIFI, checked).apply()
             selected = -1
             refresh()
-            DataBarWidget.refreshAll(this)
+            TileWidget.refreshAll(this)
         }
         val wifiRow = row("Include Wi-Fi", wifiSwitch)
         wifiRow.setOnClickListener { wifiSwitch.toggle() }
@@ -209,7 +209,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refresh()
-        DataBarWidget.refreshAll(this)
+        TileWidget.refreshAll(this)
     }
 
     private fun refresh() {

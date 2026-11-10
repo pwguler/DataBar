@@ -41,8 +41,33 @@
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
+    <style name="TextAppearance.DataBar.WidgetTitle">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/widget_title</item>
+    </style>
     <style name="TextAppearance.DataBar.Baseline">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+
+    <!-- The widget tile. clipToOutline rounds its content, and tells the launcher that the tile rounds its
+         own corners, so the launcher does not clip the widget to the tile and cut off the title. -->
+    <style name="Widget.DataBar.Tile" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/widget_bg</item>
+        <item name="android:padding">@dimen/widget_padding</item>
+        <item name="android:clipToOutline">true</item>
+    </style>
+    <style name="Widget.DataBar.Title" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/widget_title_gap</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:text">@string/app_name</item>
+        <item name="android:textAppearance">@style/TextAppearance.DataBar.WidgetTitle</item>
     </style>
 </resources>

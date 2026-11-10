@@ -1,28 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Each ImageView holds a white mask of one kind of bar. The host resolves the tints with the tile when it
-     inflates the layout, so a light/dark switch changes them together; the device theme gives the accent. -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@android:id/background"
+<!-- The tile and the title below it. Each ImageView holds a white mask of one kind of bar. The host resolves
+     the tints with the tile when it inflates the layout, so a light/dark switch changes them together; the
+     device theme gives the accent. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
-    android:contentDescription="@string/widget_desc"
-    android:padding="@dimen/widget_padding"
+    android:orientation="vertical"
     android:theme="@android:style/Theme.DeviceDefault.DayNight">
 
-    <ImageView
-        android:id="@+id/ivBars"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:importantForAccessibility="no"
-        android:scaleType="fitCenter"
-        android:tint="@color/bar" />
+    <FrameLayout
+        android:id="@android:id/background"
+        style="@style/Widget.DataBar.Tile"
+        android:contentDescription="@string/widget_desc">
 
-    <ImageView
-        android:id="@+id/ivToday"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:importantForAccessibility="no"
-        android:scaleType="fitCenter"
-        android:tint="?android:attr/colorControlActivated" />
-</FrameLayout>
+        <ImageView
+            android:id="@+id/ivBars"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:tint="@color/bar" />
+
+        <ImageView
+            android:id="@+id/ivToday"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:tint="?android:attr/colorControlActivated" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/title"
+        style="@style/Widget.DataBar.Title" />
+</LinearLayout>
