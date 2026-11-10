@@ -127,7 +127,10 @@ object UsageRepo {
     /** One app's traffic on the watched day, against its own daily average over the span. */
     data class Watch(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float) {
         val bgPercent: Int get() = if (tx > 0) (bgTx * 100 / tx).toInt() else 0
-        val flagged: Boolean get() = ratio >= 3f && bgTx * 2 >= tx
+        // Tethering, VPN, removed apps and system uids have no app to act on, so only app uids (per user) are flagged.
+        val flagged: Boolean
+            get() = uid % 100_000 in Process.FIRST_APPLICATION_UID..Process.LAST_APPLICATION_UID &&
+                ratio >= 3f && bgTx * 2 >= tx
     }
 
     /** Apps that uploaded on the watched day, from per-state flows of that day and of the whole [days]-day span. */
