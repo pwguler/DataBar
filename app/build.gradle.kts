@@ -11,8 +11,8 @@ android {
         applicationId = "dev.kognos.databar"
         minSdk = 29
         targetSdk = 34
-        versionCode = 41
-        versionName = "11.3"
+        versionCode = 42
+        versionName = "0.1.0"
     }
 
     buildTypes {
