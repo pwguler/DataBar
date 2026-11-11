@@ -1,13 +1,11 @@
 package dev.kognos.databar
 
-import android.app.PendingIntent
 import android.app.WallpaperColors
 import android.app.WallpaperManager
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -42,11 +40,7 @@ abstract class TileWidget<T> : AppWidgetProvider() {
     /** The widget for [data] at one size in dp. */
     internal fun views(context: Context, data: T, widthDp: Float, heightDp: Float): RemoteViews {
         val views = RemoteViews(context.packageName, layout)
-        val tap = PendingIntent.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        views.setOnClickPendingIntent(android.R.id.background, tap)
+        views.setOnClickPendingIntent(android.R.id.background, MainActivity.open(context))
         views.setTextColor(R.id.title, titleColor(context, wallpaperHints(context)))
         val res = context.resources
         val density = res.displayMetrics.density

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification icon: the bars of the launcher icon (x 33 to 75, y 32 to 76 of its 108 canvas), centered in 48. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <group android:translateX="-30" android:translateY="-30">
+        <path android:fillColor="#FFFFFF" android:pathData="M33,60.5 a5.5,5.5 0 0,1 11,0 V70.5 a5.5,5.5 0 0,1 -11,0 Z M48.5,49.5 a5.5,5.5 0 0,1 11,0 V70.5 a5.5,5.5 0 0,1 -11,0 Z M64,37.5 a5.5,5.5 0 0,1 11,0 V70.5 a5.5,5.5 0 0,1 -11,0 Z"/>
+    </group>
+</vector>

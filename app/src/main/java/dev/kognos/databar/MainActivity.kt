@@ -1,6 +1,8 @@
 package dev.kognos.databar
 
 import android.app.Activity
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -411,8 +413,13 @@ class MainActivity : Activity() {
         showRows(if (mode == 0) rowsByFlag else rowsByVolume)
     }
 
-    private companion object {
-        const val MAX_ROWS = 15
+    companion object {
+        private const val MAX_ROWS = 15
+
+        /** The tap target of the widgets and the alerts: opens DataBar. */
+        fun open(c: Context): PendingIntent = PendingIntent.getActivity(
+            c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
 }
