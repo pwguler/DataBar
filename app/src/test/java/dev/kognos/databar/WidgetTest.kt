@@ -213,10 +213,11 @@ class WidgetTest {
         assertPreviewImage(R.xml.widget_flagged_info)
     }
 
-    private fun watch(uid: Int, ratio: Float, bgTx: Long = 600) = UsageRepo.Watch(uid, tx = 1000, rx = 0, bgTx = bgTx, ratio = ratio)
+    private fun watch(uid: Int, ratio: Float, flagged: Boolean = true) =
+        UsageRepo.Watch(uid, tx = 1000, rx = 0, bgTx = 600, ratio = ratio, flagged = flagged)
 
-    // Four flagged apps, and one at 9x its average that is not flagged because it uploads mostly in the foreground.
-    private val today = listOf(watch(10_001, 3.2f), watch(10_002, 6f), watch(10_003, 9f, bgTx = 100), watch(10_004, 4.5f), watch(10_005, 3f))
+    // Four flagged apps, and one at 9x its average that is not flagged.
+    private val today = listOf(watch(10_001, 3.2f), watch(10_002, 6f), watch(10_003, 9f, flagged = false), watch(10_004, 4.5f), watch(10_005, 3f))
 
     private fun flagged(data: List<UsageRepo.Watch>?, widthDp: Int, heightDp: Int) =
         show(FlaggedWidget().views(app, data, widthDp.toFloat(), heightDp.toFloat()), R.layout.widget_flagged, widthDp, heightDp)
@@ -267,7 +268,7 @@ class WidgetTest {
 
     @Test
     fun flaggedWidgetSaysSoWhenNothingIsFlagged() {
-        val root = flagged(listOf(watch(10_003, 9f, bgTx = 100)), 250, 110)
+        val root = flagged(listOf(watch(10_003, 9f, flagged = false)), 250, 110)
         assertTitledTile(root)
         assertEquals(listOf("Nothing flagged today"), tileTexts(root))
     }

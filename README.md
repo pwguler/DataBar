@@ -3,7 +3,7 @@
 An Android app and two home-screen widgets for mobile data: the last 30 days as bars, and the apps that upload heavily in the background.
 
 - **App screen:** the total for the last 30 days, today and the daily average, and a 30-day chart. Tap a day to list the apps that uploaded data that day. **Highlight** sorts them by upload compared with their own daily average, and **Volume** by total bytes.
-- **Flagged apps:** an app is flagged when its upload for the day is at least 3× its average daily upload over the 30 days, and at least half of that upload happened in the background. Only installed apps can be flagged; tethering, VPN and system traffic cannot.
+- **Flagged apps:** an app is flagged when its upload for the day is at least 3× its average daily upload over the 30 days, at least half of that upload happened in the background, and the upload is at least a tenth of what all apps together upload on an average day. Only installed apps can be flagged; tethering, VPN and system traffic cannot.
 - **DataBar widget** (2x1): the 30-day bars, with today in the accent color.
 - **Flagged apps widget** (4x2): today's flagged apps, highest first.
 

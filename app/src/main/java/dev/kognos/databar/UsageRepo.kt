@@ -86,19 +86,24 @@ object UsageRepo {
     /** Traffic of one uid in one state (foreground or background). */
     data class Flow(val uid: Int, val state: Int, val rx: Long, val tx: Long)
 
-    /** One app's traffic on the watched day, against its own daily average over the span. */
-    data class Watch(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float) {
+    /** One app's traffic on the watched day, against its own daily average over the span. [watch] decides [flagged]. */
+    data class Watch(val uid: Int, val tx: Long, val rx: Long, val bgTx: Long, val ratio: Float, val flagged: Boolean) {
         val bgPercent: Int get() = if (tx > 0) (bgTx * 100 / tx).toInt() else 0
-        // Tethering, VPN, removed apps and system uids have no app to act on, so only app uids (per user) are flagged.
-        val flagged: Boolean
-            get() = uid % 100_000 in Process.FIRST_APPLICATION_UID..Process.LAST_APPLICATION_UID &&
-                ratio >= 3f && bgTx * 2 >= tx
     }
 
-    /** Apps that uploaded on the watched day, from per-state flows of that day and of the whole [days]-day span. */
+    // Tethering, VPN, removed apps and system uids have no app to act on, so only app uids (per user) count.
+    private fun isApp(uid: Int): Boolean = uid % 100_000 in Process.FIRST_APPLICATION_UID..Process.LAST_APPLICATION_UID
+
+    /**
+     * Apps that uploaded on the watched day, from per-state flows of that day and of the whole [days]-day span.
+     * An app is flagged at 3x its own average day with half of that upload in the background, when the upload
+     * is also a tenth of what all apps together upload on an average day.
+     */
     fun watch(day: List<Flow>, span: List<Flow>, days: Int): List<Watch> {
+        val d = days.coerceAtLeast(1)
         val spanTx = HashMap<Int, Long>()
         for (f in span) spanTx[f.uid] = (spanTx[f.uid] ?: 0L) + f.tx
+        val appsTx = spanTx.filterKeys(::isApp).values.sum()
         val agg = HashMap<Int, LongArray>() // uid -> [tx, rx, bgTx]
         for (f in day) {
             val a = agg.getOrPut(f.uid) { LongArray(3) }
@@ -107,8 +112,9 @@ object UsageRepo {
             if (f.state == NetworkStats.Bucket.STATE_DEFAULT) a[2] += f.tx
         }
         return agg.filter { it.value[0] > 0L }.map { (uid, v) ->
-            val baseline = ((spanTx[uid] ?: 0L) / days.coerceAtLeast(1)).coerceAtLeast(1L)
-            Watch(uid, v[0], v[1], v[2], v[0].toFloat() / baseline)
+            val baseline = ((spanTx[uid] ?: 0L) / d).coerceAtLeast(1L)
+            val ratio = v[0].toFloat() / baseline
+            Watch(uid, v[0], v[1], v[2], ratio, isApp(uid) && ratio >= 3f && v[2] * 2 >= v[0] && v[0] * 10 * d >= appsTx)
         }
     }
 

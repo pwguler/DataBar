@@ -11,6 +11,7 @@ import org.junit.Test
 class UsageRepoWatchTest {
 
     // Each uid uploaded 3000 B over a 30-day span: a 100 B daily average. App uids start at 10000 in each user.
+    // The four apps together uploaded 12000 B: 400 B on an average day, so a flag needs 40 B.
     private val notApps = listOf(-5, -4, -3, 0, 1000, 1013, 1_099_000) // tethering, removed, VPN, kernel, system, a system process, an isolated process
     private val span = (listOf(10_010, 10_011, 10_012, 1_010_020) + notApps).map { Flow(it, STATE_FOREGROUND, rx = 0, tx = 3000) }
 
@@ -22,6 +23,8 @@ class UsageRepoWatchTest {
         Flow(10_012, STATE_DEFAULT, rx = 0, tx = 299), // all background, just under 3x average
         Flow(10_013, STATE_DEFAULT, rx = 500, tx = 0), // download only
         Flow(1_010_020, STATE_DEFAULT, rx = 0, tx = 600), // an app in a second user, 6x average, all background
+        Flow(10_014, STATE_DEFAULT, rx = 0, tx = 39), // a new app, all background, just under a tenth of all apps' average day
+        Flow(10_015, STATE_DEFAULT, rx = 0, tx = 40), // a new app, all background, exactly a tenth
     ) + notApps.map { Flow(it, STATE_DEFAULT, rx = 0, tx = 600) } // 6x average, all background
 
     private val watched = UsageRepo.watch(day, span, days = 30).associateBy { it.uid }
@@ -45,6 +48,12 @@ class UsageRepoWatchTest {
     fun doesNotFlagAppBelowEitherThreshold() {
         assertFalse(watched.getValue(10_011).flagged)
         assertFalse(watched.getValue(10_012).flagged)
+    }
+
+    @Test
+    fun flagNeedsATenthOfWhatAllAppsUploadOnAnAverageDay() {
+        assertFalse(watched.getValue(10_014).flagged)
+        assertTrue(watched.getValue(10_015).flagged)
     }
 
     @Test
