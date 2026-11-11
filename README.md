@@ -56,5 +56,5 @@ docs/specs/          specs of the One UI design and of the flag alerts, with the
 
 - The numbers are measured on the phone and can differ a little from the carrier's count.
 - The widgets update every 30 minutes and each time the app opens; they are not live.
-- An alert can come late: Android delays background checks while the phone sleeps, and limits them for apps that are rarely opened.
+- An alert can come late: Android delays background checks while the phone sleeps, and limits them for apps that are rarely opened. A flag that appears after the last check of a day gets no alert.
 - Without Usage access, the app and the widgets show no data.

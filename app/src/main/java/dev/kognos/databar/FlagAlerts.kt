@@ -26,22 +26,29 @@ object FlagAlerts {
 
     private fun notifications(c: Context): NotificationManager = c.getSystemService(NotificationManager::class.java)
 
-    /** The channel of the alerts. Creating a channel that exists keeps the user's settings for it. */
-    private fun channel(c: Context): NotificationChannel {
-        notifications(c).createNotificationChannel(
-            NotificationChannel(CHANNEL, "Flag alerts", NotificationManager.IMPORTANCE_DEFAULT)
-        )
-        return notifications(c).getNotificationChannel(CHANNEL)
-    }
+    /** Creates the channel of the alerts. Creating a channel that exists keeps the user's settings for it. */
+    private fun createChannel(c: Context) = notifications(c).createNotificationChannel(
+        NotificationChannel(CHANNEL, "Flag alerts", NotificationManager.IMPORTANCE_DEFAULT)
+    )
 
     /** Whether DataBar can post alerts: notifications are allowed for the app and for the alerts channel. */
     fun allowed(c: Context): Boolean = notifications(c).areNotificationsEnabled() &&
         notifications(c).getNotificationChannel(CHANNEL)?.importance != NotificationManager.IMPORTANCE_NONE
 
-    /** Whether alerts are on: switched on, and [allowed]. */
-    fun enabled(c: Context): Boolean = UsageRepo.prefs(c).getBoolean(KEY_ON, false) && allowed(c)
+    /**
+     * Whether alerts are on. Alerts that are switched on but no longer [allowed] are switched off here, so they
+     * come back only when the user switches them on.
+     */
+    @Synchronized
+    fun enabled(c: Context): Boolean {
+        if (!UsageRepo.prefs(c).getBoolean(KEY_ON, false)) return false
+        if (allowed(c)) return true
+        setEnabled(c, false)
+        return false
+    }
 
     /** Switches alerts on or off, and the background check with them. */
+    @Synchronized
     fun setEnabled(c: Context, on: Boolean) {
         UsageRepo.prefs(c).edit().putBoolean(KEY_ON, on).apply()
         val jobs = c.getSystemService(JobScheduler::class.java)
@@ -58,14 +65,10 @@ object FlagAlerts {
     /** When the last check read the usage, or null before the first one. */
     fun lastCheck(c: Context): Long? = UsageRepo.prefs(c).getLong(KEY_CHECKED, 0L).takeIf { it > 0L }
 
-    /** Reads today's usage and alerts. Turns alerts off when they are no longer [enabled]. */
+    /** Reads today's usage and alerts, while alerts are [enabled]. */
     @Synchronized
     fun check(c: Context, now: Long = System.currentTimeMillis()) {
-        if (!enabled(c)) {
-            setEnabled(c, false)
-            return
-        }
-        if (!UsageRepo.hasUsageAccess(c)) return
+        if (!enabled(c) || !UsageRepo.hasUsageAccess(c)) return
         alert(c, UsageRepo.watchToday(c, UsageRepo.includeWifi(c)), now)
         UsageRepo.prefs(c).edit().putLong(KEY_CHECKED, now).apply()
     }
@@ -78,23 +81,22 @@ object FlagAlerts {
         val sent = prefs.getStringSet(KEY_ALERTED, emptySet())!!.filter { it.startsWith("$day:") }.toSet()
         val fresh = today.filter { it.flagged && "$day:${it.uid}" !in sent }
         if (fresh.isEmpty()) return
-        val channel = channel(c).id
+        createChannel(c)
         // Posted before it is stored: a crash in between repeats the alert, which replaces the same notification.
-        for (app in fresh) notifications(c).notify(app.uid, notification(c, channel, app))
+        for (app in fresh) notifications(c).notify(app.uid, notification(c, app))
         prefs.edit().putStringSet(KEY_ALERTED, sent + fresh.map { "$day:${it.uid}" }).apply()
     }
 
-    private fun notification(c: Context, channel: String, app: UsageRepo.Watch): Notification {
+    private fun notification(c: Context, app: UsageRepo.Watch): Notification {
         val text = "\u2191 " + UsageRepo.fmt(app.tx) + " today \u00b7 " + UsageRepo.fmtRatio(app.ratio) +
             " its average \u00b7 " + app.bgPercent + "% in background"
-        return Notification.Builder(c, channel)
+        return Notification.Builder(c, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_bars)
             .setContentTitle(UsageRepo.resolve(c, app.uid).first + " is uploading a lot")
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
             .setContentIntent(MainActivity.open(c))
             .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
             .build()
     }
 }

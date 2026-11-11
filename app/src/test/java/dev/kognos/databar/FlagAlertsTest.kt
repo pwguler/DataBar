@@ -15,6 +15,7 @@ import android.os.Process
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -114,6 +115,15 @@ class FlagAlertsTest {
     }
 
     @Test
+    fun aLaterDaysAlertSoundsAgainWhenTheEarlierOneIsStillShown() {
+        FlagAlerts.alert(app, listOf(watch(10_001)), morning)
+        FlagAlerts.alert(app, listOf(watch(10_001)), morning + 24 * hour) // the first one was not dismissed
+
+        // Android plays no sound for an update of a shown notification that only alerts once.
+        assertEquals(0, posted.single().flags and Notification.FLAG_ONLY_ALERT_ONCE)
+    }
+
+    @Test
     fun alertsAreOffUntilSwitchedOn() {
         assertFalse(FlagAlerts.enabled(app))
         assertTrue(jobs.allPendingJobs.isEmpty())
@@ -147,6 +157,26 @@ class FlagAlertsTest {
 
         FlagAlerts.setEnabled(app, true)
         assertEquals(1, jobs.allPendingJobs.size)
+    }
+
+    @Test
+    fun switchingOnAgainKeepsTheRunningCheck() {
+        FlagAlerts.setEnabled(app, true)
+        val running = jobs.allPendingJobs.single()
+
+        FlagAlerts.setEnabled(app, true)
+        assertSame("scheduling it again would start the 30 minutes anew", running, jobs.allPendingJobs.single())
+    }
+
+    @Test
+    fun blockedNotificationsSwitchAlertsOffForGood() {
+        FlagAlerts.setEnabled(app, true)
+        shadowOf(manager).setNotificationsEnabled(false)
+        assertFalse(FlagAlerts.enabled(app))
+
+        shadowOf(manager).setNotificationsEnabled(true)
+        assertFalse("alerts come back only when the user switches them on", FlagAlerts.enabled(app))
+        assertTrue(jobs.allPendingJobs.isEmpty())
     }
 
     @Test

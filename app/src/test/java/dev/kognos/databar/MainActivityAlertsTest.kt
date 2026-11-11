@@ -181,14 +181,17 @@ class MainActivityAlertsTest {
     }
 
     @Test
-    fun showsOffWhenNotificationsGetBlocked() {
+    fun showsOffWhenNotificationsGetBlockedAndStaysOffWhenTheyAreAllowedAgain() {
         row.performClick()
         notifications.setNotificationsEnabled(false)
 
         comeBack()
-
         assertFalse(switchedOn)
         assertNull(summary)
+
+        notifications.setNotificationsEnabled(true)
+        comeBack()
+        assertFalse("the row that showed off does not turn itself on", switchedOn)
     }
 
     @Test
