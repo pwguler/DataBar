@@ -213,8 +213,16 @@ object UsageRepo {
         if (uid in 1001..1099) return "Android system" to null
         val pm = c.packageManager
         try {
-            val pkgs = pm.getPackagesForUid(uid)
-            if (!pkgs.isNullOrEmpty()) return pkgs.first() to pkgs.first()
+            val pkg = pm.getPackagesForUid(uid)?.firstOrNull()
+            if (pkg != null) {
+                // An app installed after the map was built: read its name now.
+                val label = try {
+                    pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                } catch (t: Throwable) {
+                    ""
+                }
+                return label.ifBlank { pkg } to pkg
+            }
         } catch (t: Throwable) {
         }
         try {
