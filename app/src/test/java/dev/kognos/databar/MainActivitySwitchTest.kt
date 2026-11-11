@@ -14,24 +14,29 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The Wi-Fi switch as drawn: a 40 x 22dp pill, `bar` when off and the accent when on, with a white dot. */
+/** Each settings switch as drawn: a 40 x 22dp pill, `bar` when off and the accent when on, with a white dot. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h780dp-xxhdpi")
 class MainActivitySwitchTest {
 
-    private fun find(v: View): Switch? = when (v) {
-        is Switch -> v
-        is ViewGroup -> (0 until v.childCount).firstNotNullOfOrNull { find(v.getChildAt(it)) }
-        else -> null
+    private fun switches(v: View): List<Switch> = when (v) {
+        is Switch -> listOf(v)
+        is ViewGroup -> (0 until v.childCount).flatMap { switches(v.getChildAt(it)) }
+        else -> emptyList()
     }
 
     private fun hex(c: Int) = "#%08X".format(c)
 
     @Test
-    fun wifiSwitchIsAOneUiPill() {
+    fun settingsSwitchesAreOneUiPills() {
         val activity = Robolectric.buildActivity(MainActivity::class.java).setup().visible().get()
-        val switch = find(activity.window.decorView)!!
+        val all = switches(activity.window.decorView)
+        assertEquals("Flag alerts and Include Wi-Fi", 2, all.size)
+        for (switch in all) assertIsAPill(activity, switch)
+    }
+
+    private fun assertIsAPill(activity: MainActivity, switch: Switch) {
         val d = activity.resources.displayMetrics.density
         val a = activity.obtainStyledAttributes(intArrayOf(android.R.attr.colorControlActivated))
         val accent = a.getColor(0, 0)

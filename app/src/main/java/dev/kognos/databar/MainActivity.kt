@@ -1,14 +1,17 @@
 package dev.kognos.databar
 
+import android.Manifest
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
@@ -35,6 +38,9 @@ class MainActivity : Activity() {
     private lateinit var heroUnit: TextView
     private lateinit var todayLine: TextView
     private lateinit var chart: ImageView
+    private lateinit var alertsSwitch: Switch
+    private lateinit var alertsSummary: TextView
+    private var wantAlerts = false // true while the user is in the notification settings to allow the alerts
     private lateinit var accessValue: TextView
     private lateinit var appsDate: TextView
     private lateinit var appRows: LinearLayout
@@ -81,15 +87,31 @@ class MainActivity : Activity() {
             ).apply { topMargin = dp(top) })
         }
 
-    private fun row(label: String, right: View?): LinearLayout =
+    /** A settings row: the label, with [summary] under it when the row has one, and [right] at the end. */
+    private fun row(label: String, right: View?, summary: TextView? = null): LinearLayout =
         LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             minimumHeight = dp(56)
-            addView(text(label, R.style.TextAppearance_DataBar_Row), LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
-            ))
+            val title = text(label, R.style.TextAppearance_DataBar_Row)
+            val left = if (summary == null) title else LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, dp(8), 0, dp(8))
+                addView(title)
+                addView(summary)
+            }
+            addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             if (right != null) addView(right)
+        }
+
+    /** The One UI switch of DESIGN.md: the stock Switch with DataBar's pill track and dot. */
+    private fun pillSwitch(): Switch =
+        Switch(this).apply {
+            thumbDrawable = getDrawable(R.drawable.switch_thumb)
+            trackDrawable = getDrawable(R.drawable.switch_track)
+            thumbTintList = null
+            trackTintList = null
+            switchMinWidth = dp(40)
         }
 
     private fun chip(label: String, mode: Int): TextView =
@@ -152,12 +174,18 @@ class MainActivity : Activity() {
         ))
 
         val settings = block(content, 4, top = 12)
-        val wifiSwitch = Switch(this)
-        wifiSwitch.thumbDrawable = getDrawable(R.drawable.switch_thumb)
-        wifiSwitch.trackDrawable = getDrawable(R.drawable.switch_track)
-        wifiSwitch.thumbTintList = null
-        wifiSwitch.trackTintList = null
-        wifiSwitch.switchMinWidth = dp(40)
+        fun divider() = settings.addView(
+            View(this).apply { setBackgroundColor(rule) },
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1))
+        )
+        alertsSwitch = pillSwitch()
+        alertsSwitch.isClickable = false // the row takes the tap: alerts turn on only once notifications are allowed
+        alertsSummary = text("", R.style.TextAppearance_DataBar_Value)
+        val alertsRow = row("Flag alerts", alertsSwitch, alertsSummary)
+        alertsRow.setOnClickListener { setAlerts(!FlagAlerts.enabled(this)) }
+        settings.addView(alertsRow)
+        divider()
+        val wifiSwitch = pillSwitch()
         wifiSwitch.isChecked = UsageRepo.includeWifi(this)
         wifiSwitch.setOnCheckedChangeListener { _, checked ->
             UsageRepo.prefs(this).edit().putBoolean(UsageRepo.KEY_WIFI, checked).apply()
@@ -168,8 +196,7 @@ class MainActivity : Activity() {
         val wifiRow = row("Include Wi-Fi", wifiSwitch)
         wifiRow.setOnClickListener { wifiSwitch.toggle() }
         settings.addView(wifiRow)
-        settings.addView(View(this).apply { setBackgroundColor(rule) },
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)))
+        divider()
         accessValue = text("", R.style.TextAppearance_DataBar_Value)
         val accessRow = row("Usage access", accessValue)
         accessRow.setOnClickListener {
@@ -210,11 +237,62 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (wantAlerts) {
+            wantAlerts = false
+            if (FlagAlerts.allowed(this)) setAlerts(true)
+        }
+        // A force stop cancels the background check; switching alerts on again schedules it when it is missing.
+        if (FlagAlerts.enabled(this)) FlagAlerts.setEnabled(this, true)
         refresh()
         TileWidget.refreshAll(this)
     }
 
+    /** Switches the alerts. Switching on needs notifications: it asks for them, and finishes once they are allowed. */
+    private fun setAlerts(on: Boolean) {
+        if (on && !FlagAlerts.allowed(this)) {
+            askForNotifications()
+            return
+        }
+        FlagAlerts.setEnabled(this, on)
+        // shortcut: reads the usage on the main thread, as refresh() does; move both off it together
+        if (on) FlagAlerts.check(this)
+        showAlerts()
+    }
+
+    private fun askForNotifications() {
+        val prefs = UsageRepo.prefs(this)
+        // Android stops showing its dialog after two denials, and has none before Android 13: then only its
+        // settings can allow notifications.
+        val dialog = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            (!prefs.getBoolean(KEY_ASKED, false) || shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS))
+        if (dialog) {
+            prefs.edit().putBoolean(KEY_ASKED, true).apply()
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+        } else {
+            wantAlerts = true
+            startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) setAlerts(true)
+    }
+
+    private fun showAlerts() {
+        val on = FlagAlerts.enabled(this)
+        alertsSwitch.isChecked = on
+        val checked = FlagAlerts.lastCheck(this)
+        alertsSummary.visibility = if (on && checked != null) View.VISIBLE else View.GONE
+        if (checked != null) {
+            alertsSummary.text = "Last check " +
+                java.text.SimpleDateFormat("EEE HH:mm", java.util.Locale.ENGLISH).format(java.util.Date(checked))
+        }
+    }
+
     private fun refresh() {
+        showAlerts()
         val ok = UsageRepo.hasUsageAccess(this)
         accessValue.text = if (ok) "Granted" else "Needed"
         accessValue.setTextColor(if (ok) textSecondary else signal)
@@ -415,6 +493,7 @@ class MainActivity : Activity() {
 
     companion object {
         private const val MAX_ROWS = 15
+        private const val KEY_ASKED = "asked_notifications"
 
         /** The tap target of the widgets and the alerts: opens DataBar. */
         fun open(c: Context): PendingIntent = PendingIntent.getActivity(

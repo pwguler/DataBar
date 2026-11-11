@@ -63,6 +63,25 @@ class MainActivityLayoutTest {
     @Config(fontScale = 1.3f)
     fun nothingIsCutOffAtALargeFontSize() = assertNothingClipped()
 
+    private fun turnAlertsOn() {
+        FlagAlerts.setEnabled(RuntimeEnvironment.getApplication(), true)
+        FlagAlerts.check(RuntimeEnvironment.getApplication())
+    }
+
+    @Test
+    fun nothingIsCutOffWithTheLastCheckLine() {
+        turnAlertsOn()
+        assertNothingClipped()
+        assertTrue(shownTexts().any { it.text.startsWith("Last check ") })
+    }
+
+    @Test
+    @Config(fontScale = 1.3f)
+    fun nothingIsCutOffWithTheLastCheckLineAtALargeFontSize() {
+        turnAlertsOn()
+        assertNothingClipped()
+    }
+
     @Test
     fun headerLinesShareOneCenter() {
         val header = shownTexts().first { it.text.toString() == "DataBar" }.parent as ViewGroup
