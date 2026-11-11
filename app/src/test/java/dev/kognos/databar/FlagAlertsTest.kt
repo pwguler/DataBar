@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.job.JobScheduler
 import android.app.job.JobService
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -78,12 +79,17 @@ class FlagAlertsTest {
     }
 
     @Test
-    fun tappingANotificationOpensDataBar() {
+    fun tappingANotificationOpensANewDataBarScreenAndRemovesIt() {
         FlagAlerts.alert(app, listOf(watch(10_001)), morning)
 
-        val tap = shadowOf(posted.single().contentIntent)
+        val n = posted.single()
+        val tap = shadowOf(n.contentIntent)
         assertTrue(tap.isActivity)
         assertEquals(MainActivity::class.java.name, tap.savedIntent.component?.className)
+        // Clearing the task to a new screen is what shows today, and what puts no second screen on the first.
+        val anew = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        assertEquals(anew, tap.savedIntent.flags and anew)
+        assertTrue(n.flags and Notification.FLAG_AUTO_CANCEL != 0)
     }
 
     @Test

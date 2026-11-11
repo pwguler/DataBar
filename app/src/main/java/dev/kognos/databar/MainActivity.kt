@@ -495,9 +495,15 @@ class MainActivity : Activity() {
         private const val MAX_ROWS = 15
         private const val KEY_ASKED = "asked_notifications"
 
-        /** The tap target of the widgets and the alerts: opens DataBar. */
+        /**
+         * The tap target of the widgets and the alerts: opens DataBar on a new screen, which shows today.
+         * Request code 1, because Android matches a PendingIntent without the flags of its intent, and can
+         * still hold the target of versions before 0.2.0 under code 0.
+         */
         fun open(c: Context): PendingIntent = PendingIntent.getActivity(
-            c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            c, 1,
+            Intent(c, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
 

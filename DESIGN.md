@@ -80,7 +80,7 @@ The 30-day chart in the app and the widget is a row of pill bars.
 
 Two widgets, each a tile with the title "DataBar" below it, the way One UI labels its own widgets.
 
-- Tile: `block`, the system widget corner radius on Android 12+ and 26 before, padding 16. The widget root uses `Theme.DeviceDefault.DayNight`, so the accent and the text colors follow the device. Tapping the tile opens DataBar.
+- Tile: `block`, the system widget corner radius on Android 12+ and 26 before, padding 16. The widget root uses `Theme.DeviceDefault.DayNight`, so the accent and the text colors follow the device. Tapping the tile opens DataBar on today.
 - Title: centered, 2 below the tile. Its color is chosen when the widget updates: every 30 minutes and when DataBar opens.
 - Each tile is drawn at every size the launcher lists; before Android 12, at the portrait or landscape size of the cell.
 - **DataBar** (2x1): the bars as in "Bars"; today is the selected day.
