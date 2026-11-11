@@ -3,8 +3,11 @@ package dev.kognos.databar
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.job.JobInfo
 import android.app.job.JobParameters
+import android.app.job.JobScheduler
 import android.app.job.JobService
+import android.content.ComponentName
 import android.content.Context
 import java.time.Instant
 import java.time.ZoneId
@@ -13,6 +16,10 @@ import java.time.ZoneId
 object FlagAlerts {
 
     private const val CHANNEL = "flag_alerts"
+    private const val KEY_ON = "alerts"
+    private const val KEY_CHECKED = "alerts_checked"
+    private const val JOB = 1
+    private const val EVERY = 30 * 60 * 1000L
 
     /** The alerts of the latest day that had any, each as "<epoch day>:<uid>". */
     private const val KEY_ALERTED = "alerted"
@@ -28,19 +35,40 @@ object FlagAlerts {
     }
 
     /** Whether DataBar can post alerts: notifications are allowed for the app and for the alerts channel. */
-    fun allowed(c: Context): Boolean = TODO("not implemented")
+    fun allowed(c: Context): Boolean = notifications(c).areNotificationsEnabled() &&
+        notifications(c).getNotificationChannel(CHANNEL)?.importance != NotificationManager.IMPORTANCE_NONE
 
     /** Whether alerts are on: switched on, and [allowed]. */
-    fun enabled(c: Context): Boolean = TODO("not implemented")
+    fun enabled(c: Context): Boolean = UsageRepo.prefs(c).getBoolean(KEY_ON, false) && allowed(c)
 
     /** Switches alerts on or off, and the background check with them. */
-    fun setEnabled(c: Context, on: Boolean): Unit = TODO("not implemented")
+    fun setEnabled(c: Context, on: Boolean) {
+        UsageRepo.prefs(c).edit().putBoolean(KEY_ON, on).apply()
+        val jobs = c.getSystemService(JobScheduler::class.java)
+        if (!on) {
+            jobs.cancel(JOB)
+        } else if (jobs.getPendingJob(JOB) == null) {
+            // Only when it is missing: scheduling it again would start the 30 minutes anew.
+            jobs.schedule(
+                JobInfo.Builder(JOB, ComponentName(c, FlagAlertJob::class.java)).setPeriodic(EVERY).setPersisted(true).build()
+            )
+        }
+    }
 
     /** When the last check read the usage, or null before the first one. */
-    fun lastCheck(c: Context): Long? = TODO("not implemented")
+    fun lastCheck(c: Context): Long? = UsageRepo.prefs(c).getLong(KEY_CHECKED, 0L).takeIf { it > 0L }
 
     /** Reads today's usage and alerts. Turns alerts off when they are no longer [enabled]. */
-    fun check(c: Context, now: Long = System.currentTimeMillis()): Unit = TODO("not implemented")
+    @Synchronized
+    fun check(c: Context, now: Long = System.currentTimeMillis()) {
+        if (!enabled(c)) {
+            setEnabled(c, false)
+            return
+        }
+        if (!UsageRepo.hasUsageAccess(c)) return
+        alert(c, UsageRepo.watchToday(c, UsageRepo.includeWifi(c)), now)
+        UsageRepo.prefs(c).edit().putLong(KEY_CHECKED, now).apply()
+    }
 
     /** Posts one notification for each app in [today] that is flagged and has had none on the day of [now]. */
     @Synchronized
@@ -71,10 +99,17 @@ object FlagAlerts {
     }
 }
 
-/** The background check. */
+/** The background check. A job starts on the main thread, so the check runs on its own. */
 class FlagAlertJob : JobService() {
 
-    override fun onStartJob(params: JobParameters): Boolean = TODO("not implemented")
+    override fun onStartJob(params: JobParameters): Boolean {
+        Thread {
+            FlagAlerts.check(applicationContext)
+            jobFinished(params, false)
+        }.start()
+        return true
+    }
 
-    override fun onStopJob(params: JobParameters): Boolean = TODO("not implemented")
+    // Nothing to undo when the system stops a check, and the next period checks again.
+    override fun onStopJob(params: JobParameters): Boolean = false
 }

@@ -11,6 +11,10 @@
         tools:ignore="QueryAllPackagesPermission"
         xmlns:tools="http://schemas.android.com/tools" />
 
+    <!-- Flag alerts: the notifications, and a background check that survives a restart. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -50,5 +54,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_flagged_info" />
         </receiver>
+
+        <service
+            android:name=".FlagAlertJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 </manifest>
