@@ -24,7 +24,7 @@ The theme's font, nothing bundled: the text styles inherit `TextAppearance.Devic
 | Summary line | 14sp | regular | `textColorSecondary` |
 | Block title ("Watch · today") | 16sp | bold | `textColorPrimary` |
 | Settings label | 16sp | regular | `textColorPrimary` |
-| Settings value | 14sp | regular | `textColorSecondary`; `signal` when access is missing |
+| Settings value, row summary ("Last check Tue 14:32") | 14sp | regular | `textColorSecondary`; `signal` when access is missing |
 | Chip | 13sp | bold | `textColorSecondary`; selected: accent |
 | App name | 16sp | regular | `textColorPrimary` |
 | App traffic line | 13sp | regular | `textColorPrimary` |
@@ -61,7 +61,7 @@ All values in dp.
 
 - Header: sized to its text, with 32 above and 24 below. "DataBar", the total with its unit on one baseline, and the summary line, centered, 14 apart.
 - Blocks: 12 from the screen edges and 12 apart, corner radius 26, padding 20; the settings block has 4 above and below its rows. 24 below the last block.
-- Settings rows: at least 56 tall, a 1dp `rule` between them. Tapping anywhere on the Wi-Fi row toggles the switch.
+- Settings rows: Flag alerts, Include Wi-Fi and Usage access, each at least 56 tall, a 1dp `rule` between them. A row can show a summary under its label; the two lines keep 8 above and below. Tapping anywhere on a switch row toggles its switch.
 - Switch: a 40 x 22 pill, the accent when on and `bar` when off, with a 16 white dot 3 from the top and 2 from the end.
 - Apps block: the title, the chips 14 below it, then the rows 6 below the chips. Chips are 30 tall pills with 14 side padding, 8 apart, inside a 48 tall tap area. Selected chips are filled with the accent at 16% opacity; the others have a 1dp `rule` outline.
 - App rows: at least 12 above and below, a 28 icon (the system's generic app icon for traffic that is not an app), 12 to the name, and a 4 tall rounded share bar 10 below the text. Any share shows at least a round dot.
@@ -86,6 +86,14 @@ Two widgets, each a tile with the title "DataBar" below it, the way One UI label
 - **DataBar** (2x1): the bars as in "Bars"; today is the selected day.
 - **Flagged apps** (4x2, and never shorter: one home-screen row leaves room for one row of apps at most): today's flagged apps, highest × first, one row each, at least 24 tall: a 20 icon, 8 to the name, then on the right the upload today ("↑ 188 MB") and the ratio ("5,5×"), 8 apart. As many rows as fit. When some flagged apps don't fit, the last row says "+N more", or "N flagged" when it is the only row. With nothing flagged the tile says "Nothing flagged today"; without Usage access, "Usage access needed".
 - Picker previews: each widget shows its tile with sample content and no title, since the picker shows the widget's name. The preview layout uses the widget's styles and the device theme. Launchers without preview layouts show a preview image instead: the same tile, today's bar in `preview_accent`, and rounded lines in place of text.
+
+## Notification
+
+Flag alerts post one notification for each flagged app, once a day per app, in the channel "Flag alerts" at the default importance, so it sounds as the phone is set.
+
+- Small icon: the three pill bars of the launcher icon, white on a 24 canvas.
+- Title: the app's name and "is uploading a lot". Text: "↑ 188 MB today · 5,5× its average · 62% in background", which expands to its full length.
+- Tapping it opens DataBar on today and removes the notification.
 
 ## Icon
 
