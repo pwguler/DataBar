@@ -32,7 +32,7 @@ class MainActivitySwitchTest {
     fun settingsSwitchesAreOneUiPills() {
         val activity = Robolectric.buildActivity(MainActivity::class.java).setup().visible().get()
         val all = switches(activity.window.decorView)
-        assertEquals("Flag alerts and Include Wi-Fi", 2, all.size)
+        assertEquals("Flag alerts, Include Wi-Fi and Block apps", 3, all.size)
         for (switch in all) assertIsAPill(activity, switch)
     }
 

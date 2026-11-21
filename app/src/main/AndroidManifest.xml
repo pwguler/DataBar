@@ -15,6 +15,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- App block: the local VPN that drops the traffic of blocked apps runs as a foreground service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -53,6 +57,35 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_flagged_info" />
+        </receiver>
+
+        <activity
+            android:name=".BlockActivity"
+            android:exported="false"
+            android:label="Block apps"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- specialUse, not systemExempted: systemExempted throws when DataBar is not the prepared VPN app. -->
+        <service
+            android:name=".BlockService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local VPN that drops all traffic of apps the user chose to block; nothing is forwarded." />
+        </service>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <service

@@ -5,6 +5,7 @@ import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.drawable.Drawable
 import android.net.ConnectivityManager
 import android.os.Process
 import java.util.Calendar
@@ -216,12 +217,7 @@ object UsageRepo {
             val pkg = pm.getPackagesForUid(uid)?.firstOrNull()
             if (pkg != null) {
                 // An app installed after the map was built: read its name now.
-                val label = try {
-                    pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-                } catch (t: Throwable) {
-                    ""
-                }
-                return label.ifBlank { pkg } to pkg
+                return label(c, pkg) to pkg
             }
         } catch (t: Throwable) {
         }
@@ -231,6 +227,24 @@ object UsageRepo {
         } catch (t: Throwable) {
         }
         return "System uid " + uid to null
+    }
+
+    /** The name of an installed app, or its package name when it has none. */
+    fun label(c: Context, pkg: String): String {
+        val pm = c.packageManager
+        val label = try {
+            pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+        } catch (t: Throwable) {
+            ""
+        }
+        return label.ifBlank { pkg }
+    }
+
+    /** The icon of an installed app, or null when it is gone. */
+    fun icon(c: Context, pkg: String): Drawable? = try {
+        c.packageManager.getApplicationIcon(pkg)
+    } catch (t: Throwable) {
+        null
     }
 
     /** Number and unit apart, with a decimal comma. */

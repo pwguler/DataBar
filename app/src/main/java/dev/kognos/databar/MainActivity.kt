@@ -11,6 +11,7 @@ import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -42,6 +43,9 @@ class MainActivity : Activity() {
     private lateinit var alertsSummary: TextView
     private var wantAlerts = false // true while the user is in the notification settings to allow the alerts
     private lateinit var accessValue: TextView
+    private lateinit var blockSwitch: Switch
+    private lateinit var blockSummary: TextView
+    private lateinit var blockedValue: TextView
     private lateinit var appsDate: TextView
     private lateinit var appRows: LinearLayout
 
@@ -203,6 +207,18 @@ class MainActivity : Activity() {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
         settings.addView(accessRow)
+        divider()
+        blockSwitch = pillSwitch()
+        blockSwitch.isClickable = false // the row takes the tap: the block turns on only once Android allows the VPN
+        blockSummary = text("", R.style.TextAppearance_DataBar_Value)
+        val blockRow = row("Block apps", blockSwitch, blockSummary)
+        blockRow.setOnClickListener { setBlock(!AppBlock.enabled(this)) }
+        settings.addView(blockRow)
+        divider()
+        blockedValue = text("", R.style.TextAppearance_DataBar_Value)
+        val blockedRow = row("Blocked apps", blockedValue)
+        blockedRow.setOnClickListener { startActivity(Intent(this, BlockActivity::class.java)) }
+        settings.addView(blockedRow)
 
         val apps = block(content, 20, top = 12)
         appsDate = text("", R.style.TextAppearance_DataBar_BlockTitle)
@@ -280,6 +296,34 @@ class MainActivity : Activity() {
         if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) setAlerts(true)
     }
 
+    /** Switches the block. Switching on needs VPN consent: it asks Android, and finishes once the user allows it. */
+    private fun setBlock(on: Boolean) {
+        val consent = if (on) VpnService.prepare(this) else null
+        if (consent != null) {
+            startActivityForResult(consent, REQUEST_VPN)
+            return
+        }
+        AppBlock.setEnabled(this, on)
+        showBlock()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_VPN && resultCode == RESULT_OK) setBlock(true)
+    }
+
+    private fun showBlock() {
+        val on = AppBlock.enabled(this)
+        val n = AppBlock.admissible(this).size
+        blockSwitch.isChecked = on
+        blockSummary.visibility = if (on) View.VISIBLE else View.GONE
+        blockSummary.text = if (n == 0) "No apps chosen" else AppBlock.count(n)
+        blockedValue.text = when (n) {
+            0 -> "None"
+            1 -> "1 app"
+            else -> "$n apps"
+        }
+    }
+
     private fun showAlerts() {
         val on = FlagAlerts.enabled(this)
         alertsSwitch.isChecked = on
@@ -293,6 +337,7 @@ class MainActivity : Activity() {
 
     private fun refresh() {
         showAlerts()
+        showBlock()
         val ok = UsageRepo.hasUsageAccess(this)
         accessValue.text = if (ok) "Granted" else "Needed"
         accessValue.setTextColor(if (ok) textSecondary else signal)
@@ -396,11 +441,7 @@ class MainActivity : Activity() {
     private fun iconFor(pkg: String?): Drawable? {
         if (pkg == null) return null
         if (iconCache.containsKey(pkg)) return iconCache[pkg]
-        val dr = try {
-            packageManager.getApplicationIcon(pkg)
-        } catch (t: Throwable) {
-            null
-        }
+        val dr = UsageRepo.icon(this, pkg)
         iconCache[pkg] = dr
         return dr
     }
@@ -494,6 +535,7 @@ class MainActivity : Activity() {
     companion object {
         private const val MAX_ROWS = 15
         private const val KEY_ASKED = "asked_notifications"
+        private const val REQUEST_VPN = 1
 
         /**
          * The tap target of the widgets and the alerts: opens DataBar on a new screen, which shows today.
