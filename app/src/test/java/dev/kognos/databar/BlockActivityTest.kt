@@ -31,7 +31,7 @@ class BlockActivityTest {
     private fun install(pkg: String, label: String) {
         shadowOf(app.packageManager).installPackage(PackageInfo().apply {
             packageName = pkg
-            applicationInfo = ApplicationInfo().apply { packageName = pkg; nonLocalizedLabel = label }
+            applicationInfo = ApplicationInfo().apply { packageName = pkg; nonLocalizedLabel = label; uid = 10_100 + pkg.length }
         })
         shadowOf(app.packageManager).addResolveInfoForIntent(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),

@@ -52,7 +52,7 @@ class MainActivityBlockTest {
 
     private fun install(pkg: String) = shadowOf(app.packageManager).installPackage(PackageInfo().apply {
         packageName = pkg
-        applicationInfo = ApplicationInfo().apply { packageName = pkg; nonLocalizedLabel = pkg }
+        applicationInfo = ApplicationInfo().apply { packageName = pkg; nonLocalizedLabel = pkg; uid = 10_100 + pkg.hashCode().mod(1000) }
     })
 
     @Test
@@ -109,6 +109,34 @@ class MainActivityBlockTest {
         assertFalse(switchedOn)
         assertFalse(AppBlock.enabled(app))
         assertEquals(emptyList<String>(), shownTexts("Block apps"))
+    }
+
+    @Test
+    fun openingDataBarSwitchesOffABlockThatLostItsVpnConsent() {
+        install("com.example.a")
+        AppBlock.setBlocked(app, "com.example.a", true)
+        AppBlock.setEnabled(app, true)
+        assertTrue(switchedOn)
+
+        ShadowVpnService.setPrepareResult(Intent("android.net.vpn.CONSENT")) // e.g. restored from a backup
+        controller.pause().resume()
+
+        assertFalse(switchedOn)
+        assertEquals(emptyList<String>(), shownTexts("Block apps"))
+    }
+
+    @Test
+    fun turningOnAsksForNotificationsWhenTheyAreBlocked() {
+        shadowOf(app.getSystemService(android.app.NotificationManager::class.java)).setNotificationsEnabled(false)
+
+        row("Block apps").performClick()
+
+        assertTrue(switchedOn)
+        assertEquals(listOf(android.Manifest.permission.POST_NOTIFICATIONS), shadowOf(activity).lastRequestedPermission.requestedPermissions.toList())
+        shadowOf(app.getSystemService(android.app.NotificationManager::class.java)).setNotificationsEnabled(true)
+        activity.onRequestPermissionsResult(shadowOf(activity).lastRequestedPermission.requestCode,
+            arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), intArrayOf(android.content.pm.PackageManager.PERMISSION_GRANTED))
+        assertFalse("the answer is not taken as a yes to Flag alerts", FlagAlerts.enabled(app))
     }
 
     @Test

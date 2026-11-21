@@ -32,12 +32,15 @@ class AppBlockTest {
     @Before
     fun consentHeld() = ShadowVpnService.setPrepareResult(null) // Robolectric's default asks for consent
 
-    private fun install(pkg: String, label: String, launcher: Boolean = true) {
+    private var nextUid = 10_100
+
+    private fun install(pkg: String, label: String, launcher: Boolean = true, appUid: Int = nextUid++) {
         shadowOf(app.packageManager).installPackage(PackageInfo().apply {
             packageName = pkg
             applicationInfo = ApplicationInfo().apply {
                 packageName = pkg
                 nonLocalizedLabel = label
+                uid = appUid
             }
         })
         if (launcher) {
@@ -182,12 +185,54 @@ class AppBlockTest {
     }
 
     @Test
+    fun aBlockThatLostItsVpnConsentSwitchesOff() {
+        install("com.example.a", "A")
+        AppBlock.setBlocked(app, "com.example.a", true)
+        AppBlock.setEnabled(app, true)
+        ShadowVpnService.setPrepareResult(Intent("consent")) // a restored backup, or another app's Always-on VPN
+        shadowOf(app).clearStartedServices()
+
+        AppBlock.sync(app)
+
+        assertFalse(AppBlock.enabled(app))
+        assertEquals(BlockService.ACTION_STOP, started!!.action)
+    }
+
+    @Test
+    fun withNothingToBlockTheSwitchStaysOnWithoutConsent() {
+        AppBlock.setEnabled(app, true)
+        ShadowVpnService.setPrepareResult(Intent("consent"))
+
+        AppBlock.sync(app)
+
+        assertTrue("no app chosen: consent is not checked yet", AppBlock.enabled(app))
+    }
+
+    @Test
+    fun aBlockedAppInstalledAgainRebuildsTheTunnel() {
+        install("com.example.a", "A")
+        AppBlock.setBlocked(app, "com.example.a", true)
+        AppBlock.setEnabled(app, true)
+        Robolectric.buildService(BlockService::class.java).create()
+        shadowOf(app).clearStartedServices()
+
+        app.sendBroadcast(Intent(Intent.ACTION_PACKAGE_ADDED, android.net.Uri.parse("package:com.example.other")))
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertNull("another app: no rebuild", started)
+
+        app.sendBroadcast(Intent(Intent.ACTION_PACKAGE_ADDED, android.net.Uri.parse("package:com.example.a")))
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertEquals(BlockService.ACTION_START, started?.action)
+    }
+
+    @Test
     fun anotherVpnTakingOverSwitchesTheBlockOff() {
         install("com.example.a", "A")
         AppBlock.setBlocked(app, "com.example.a", true)
         AppBlock.setEnabled(app, true)
 
         Robolectric.buildService(BlockService::class.java).create().get().onRevoke()
+        shadowOf(android.os.Looper.getMainLooper()).idle()
 
         assertFalse(AppBlock.enabled(app))
         assertEquals(setOf("com.example.a"), AppBlock.blocked(app))
@@ -200,7 +245,9 @@ class AppBlockTest {
         val allowed = mutableListOf<String>()
         val addresses = mutableListOf<String>()
         val routes = mutableListOf<String>()
+        val dns = mutableListOf<String>()
         var blocking = false
+        var established = false
 
         inner class Recorder : Builder() {
             override fun addAllowedApplication(packageName: String): Builder = apply { allowed += packageName }
@@ -209,6 +256,8 @@ class AppBlockTest {
             override fun addRoute(address: String, prefixLength: Int): Builder = apply { routes += "$address/$prefixLength" }
             override fun setBlocking(blocking: Boolean): Builder = apply { this@Vpn.blocking = blocking }
             override fun setSession(session: String): Builder = this
+            override fun addDnsServer(address: String): Builder = apply { dns += address }
+            override fun establish(): android.os.ParcelFileDescriptor? = null.also { established = true } // as without consent
         }
     }
 
@@ -230,6 +279,51 @@ class AppBlockTest {
         assertTrue("an IPv4 address: ${vpn.addresses}", vpn.addresses.any { '.' in it })
         assertTrue("an IPv6 address: ${vpn.addresses}", vpn.addresses.any { ':' in it })
         assertTrue("blocking reads, so the drain thread waits", vpn.blocking)
+        assertTrue("an IPv4 DNS server: ${vpn.dns}", vpn.dns.any { '.' in it })
+        assertTrue("an IPv6 DNS server: ${vpn.dns}", vpn.dns.any { ':' in it })
+    }
+
+    @Test
+    fun theTunnelIsNeverEstablishedWithoutAnAdmittedApp() {
+        AppBlock.setBlocked(app, "com.example.gone", true)
+        AppBlock.setEnabled(app, true)
+        val vpn = Vpn()
+
+        assertNull(AppBlock.establish(app, vpn.Recorder()))
+        assertFalse("an empty allowed list would capture every app", vpn.established)
+        assertTrue(AppBlock.enabled(app))
+    }
+
+    @Test
+    fun theTunnelIsNotEstablishedWhileTheBlockIsOff() {
+        install("com.example.a", "A")
+        AppBlock.setBlocked(app, "com.example.a", true)
+        val vpn = Vpn()
+
+        assertNull(AppBlock.establish(app, vpn.Recorder()))
+        assertFalse(vpn.established)
+    }
+
+    @Test
+    fun aTunnelThatAndroidRefusesSwitchesTheBlockOff() {
+        install("com.example.a", "A")
+        AppBlock.setBlocked(app, "com.example.a", true)
+        AppBlock.setEnabled(app, true)
+        val vpn = Vpn()
+
+        assertNull(AppBlock.establish(app, vpn.Recorder()))
+        assertTrue(vpn.established)
+        assertFalse(AppBlock.enabled(app))
+    }
+
+    @Test
+    fun appsOnASystemUidAreNeverAdmittedOrOffered() {
+        install("com.android.settings", "Settings", appUid = 1000)
+
+        val (n, _) = configured(setOf("com.android.settings"))
+
+        assertEquals(0, n)
+        assertEquals(emptyList<AppBlock.App>(), AppBlock.launchable(app))
     }
 
     @Test
@@ -298,6 +392,14 @@ class AppBlockTest {
         assertEquals(listOf(a("com.example.chat", "Chat")), apps)
     }
 
+    @Test
+    fun pickerKeepsABlockedAppThatLostItsLauncherEntry() {
+        install("com.example.service", "Service", launcher = false)
+        AppBlock.setBlocked(app, "com.example.service", true)
+
+        assertEquals(listOf(a("com.example.service", "Service")), AppBlock.launchable(app))
+    }
+
     // --- the manifest
 
     @Test
@@ -307,7 +409,12 @@ class AppBlockTest {
         )
         assertEquals(android.Manifest.permission.BIND_VPN_SERVICE, info.permission)
         assertEquals(ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE, info.foregroundServiceType)
-        assertFalse(info.exported && info.permission == null)
+        assertFalse(info.exported)
+        assertEquals("Settings must not offer Always-on with lockdown", false, info.metaData.getBoolean("android.net.VpnService.SUPPORTS_ALWAYS_ON", true))
+        for (action in listOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)) {
+            val receivers = app.packageManager.queryBroadcastReceivers(Intent(action).setPackage(app.packageName), 0)
+            assertEquals(action, listOf(BootReceiver::class.java.name), receivers.map { it.activityInfo.name })
+        }
         val requested = app.packageManager.getPackageInfo(app.packageName, PackageManager.GET_PERMISSIONS).requestedPermissions!!.toList()
         assertTrue(android.Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE in requested)
         assertFalse("DataBar never sends anything itself", android.Manifest.permission.INTERNET in requested)

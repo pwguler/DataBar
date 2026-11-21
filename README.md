@@ -5,7 +5,7 @@ An Android app and two home-screen widgets for mobile data: the last 30 days as 
 - **App screen:** the total for the last 30 days, today and the daily average, and a 30-day chart. Tap a day to list the apps that uploaded data that day. **Highlight** sorts them by upload compared with their own daily average, and **Volume** by total bytes.
 - **Flagged apps:** an app is flagged when its upload for the day is at least 3× its average daily upload over the 30 days, at least half of that upload happened in the background, and the upload is at least a tenth of what all apps together upload on an average day. Only installed apps can be flagged; tethering, VPN and system traffic cannot.
 - **Flag alerts:** a notification when an app is flagged today, once a day per app. They are off until you turn on **Flag alerts** in the app. DataBar then checks about every 30 minutes in the background, and the row shows the time of the last check.
-- **Block apps:** pick apps under **Blocked apps** and turn on **Block apps**: those apps lose all network access, on mobile data and on Wi-Fi, while every other app keeps its internet. DataBar does this with a local VPN that admits only the blocked apps and drops every packet they send; nothing is forwarded anywhere, and no root is needed. Android asks once to allow the VPN, shows its key icon in the status bar while the block runs, and DataBar shows a quiet "Blocking N apps" notification. The block starts again after a restart.
+- **Block apps:** pick apps under **Blocked apps** and turn on **Block apps**: those apps lose all network access, on mobile data and on Wi-Fi, while every other app keeps its internet. DataBar does this with a local VPN that admits only the blocked apps and drops every packet they send, their DNS lookups included; nothing is forwarded anywhere, and no root is needed. Android asks once to allow the VPN, shows its key icon in the status bar while the block runs, and DataBar shows a quiet "Blocking N apps" notification (on Android 13 and later, once notifications are allowed; DataBar asks when you turn the block on). The block starts again after a restart.
 - **DataBar widget** (2x1): the 30-day bars, with today in the accent color.
 - **Flagged apps widget** (4x2): today's flagged apps, highest first.
 
@@ -20,7 +20,7 @@ Permissions:
 - `PACKAGE_USAGE_STATS` (Usage access): to read data usage per app. Android grants it only in Settings; the **Usage access** row in the app opens that page.
 - `QUERY_ALL_PACKAGES`: to show app names and icons. Without it, Android 11+ hides the installed apps.
 - `ACCESS_NETWORK_STATE`.
-- `POST_NOTIFICATIONS`: to show the flag alerts. Android asks for it when you turn **Flag alerts** on.
+- `POST_NOTIFICATIONS`: to show the flag alerts and the notification of the app block. Android asks for it when you turn **Flag alerts** or **Block apps** on.
 - `RECEIVE_BOOT_COMPLETED`: to keep the background check of the alerts, and the app block, after a restart.
 - `BIND_VPN_SERVICE` (on DataBar's VPN service, so that only Android can bind it): the app block. Android asks you to allow the VPN the first time you turn **Block apps** on.
 - `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_SPECIAL_USE`: the app block runs as a foreground service with its notification, so Android keeps it running.
@@ -64,7 +64,7 @@ docs/specs/          specs of the One UI design, the flag alerts and the app blo
 - An alert can come late: Android delays background checks while the phone sleeps, and limits them for apps that are rarely opened. A flag that appears after the last check of a day gets no alert.
 - Without Usage access, the app and the widgets show no data.
 - Android runs one VPN at a time. Turning on **Block apps** disconnects another VPN app, and connecting another VPN switches **Block apps** off; turn it on again afterwards.
-- When another app is set as Always-on VPN (Settings > Network & internet > VPN), Android does not let DataBar start its VPN, so the block cannot run.
-- Private DNS is unaffected: it applies to the apps that are not blocked as before.
-- System apps can't be blocked reliably: the picker lists only apps with a launcher icon, and system services that share a uid with others or use the network on behalf of an app (downloads, push messages, location) are outside the VPN of the app.
+- When another app is set as Always-on VPN (Settings > Network & internet > VPN), Android does not let DataBar start its VPN, so the block cannot run; **Block apps** switches off when DataBar opens. DataBar itself cannot be set as Always-on VPN.
+- Private DNS is unaffected: it applies to the apps that are not blocked as before. Blocked apps resolve nothing.
+- System apps can't be blocked reliably: the picker lists only apps with a launcher icon and leaves out apps that run as a system uid (such as Settings), and traffic that system services make on behalf of an app (downloads, push messages, location) is outside the VPN. Android blocks by uid, so apps that share one uid are blocked together.
 - A blocked app's traffic stops on the phone, so its usage in DataBar drops to nothing from then on; what it used before stays in the numbers.

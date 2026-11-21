@@ -74,6 +74,10 @@
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
+            <!-- Always-on with lockdown would cut every app that is not blocked, since only blocked apps enter this VPN. -->
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="false" />
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Local VPN that drops all traffic of apps the user chose to block; nothing is forwarded." />

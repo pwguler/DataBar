@@ -7,9 +7,13 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.os.Process
 import java.io.FileInputStream
 import java.io.IOException
 
@@ -46,34 +50,49 @@ object AppBlock {
         sync(c)
     }
 
-    /** The blocked apps that the tunnel can admit: installed, and never DataBar. */
+    /** The blocked apps that the tunnel can admit. */
     fun admissible(c: Context): List<String> = blocked(c).filter { admits(c, it) }
 
+    /**
+     * Whether the tunnel may admit [pkg]: installed, not DataBar, and an app uid. The VPN admits uids, not
+     * packages, so an app on a system uid (Settings is uid 1000) would take system services into the tunnel.
+     */
     private fun admits(c: Context, pkg: String): Boolean = pkg != c.packageName && try {
-        c.packageManager.getApplicationInfo(pkg, 0)
-        true
+        c.packageManager.getApplicationInfo(pkg, 0).uid % 100_000 >= Process.FIRST_APPLICATION_UID
     } catch (e: PackageManager.NameNotFoundException) {
         false
     }
 
-    /** Whether the tunnel should run: the block is on, DataBar holds VPN consent, and an app can be admitted. */
-    fun shouldRun(c: Context): Boolean = enabled(c) && VpnService.prepare(c) == null && admissible(c).isNotEmpty()
-
     /**
-     * Starts or rebuilds the tunnel when the block is on, DataBar holds VPN consent and an app can be admitted;
-     * otherwise stops it. Called from DataBar's screens and at boot, where Android allows starting a service.
+     * Starts or rebuilds the tunnel when the block is on and an app can be admitted, otherwise stops it. A block
+     * that lost its VPN consent (a restored backup, another app's Always-on VPN) switches off here.
      */
     fun sync(c: Context) {
         val intent = Intent(c, BlockService::class.java)
-        if (shouldRun(c)) {
+        // prepare() takes the VPN from the app that holds it, so it is called only when there is something to block.
+        val wanted = enabled(c) && admissible(c).isNotEmpty()
+        val consent = wanted && VpnService.prepare(c) == null
+        if (wanted && !consent) save(c, false)
+        if (consent) {
             c.startForegroundService(intent.setAction(BlockService.ACTION_START))
         } else {
             try {
                 c.startService(intent.setAction(BlockService.ACTION_STOP))
             } catch (e: IllegalStateException) {
-                // Android refuses a service start from the background; no tunnel can be running then anyway.
+                // Refused from the background, at boot; no tunnel runs before boot completes.
             }
         }
+    }
+
+    /**
+     * Builds the tunnel on [b] and establishes it, or returns null when no app can be admitted, the block is off,
+     * or Android no longer grants DataBar the VPN; in that last case the block switches off.
+     */
+    fun establish(c: Context, b: VpnService.Builder): ParcelFileDescriptor? {
+        if (!enabled(c) || configure(c, b, blocked(c)) == 0) return null
+        val fd = b.establish()
+        if (fd == null) save(c, false)
+        return fd
     }
 
     /**
@@ -81,7 +100,7 @@ object AppBlock {
      * admitted; with none the caller must not establish, because an empty allowed list admits every app.
      */
     fun configure(c: Context, b: VpnService.Builder, pkgs: Set<String>): Int {
-        // Checked here: on Android 14 addAllowedApplication accepts a package that is not installed.
+        // Checked here: addAllowedApplication accepts a package that is not installed.
         val admitted = pkgs.filter { admits(c, it) }
         for (pkg in admitted) b.addAllowedApplication(pkg)
         b.setSession("DataBar")
@@ -90,6 +109,9 @@ object AppBlock {
             .addAddress("fd00:db:db::1", 128)
             .addRoute("0.0.0.0", 0)
             .addRoute("::", 0)
+            // Without a DNS server of its own, Android resolves the blocked apps' names on the physical network.
+            .addDnsServer("10.111.222.2")
+            .addDnsServer("fd00:db:db::2")
         return admitted.size
     }
 
@@ -112,14 +134,12 @@ object AppBlock {
 
     data class App(val pkg: String, val label: String)
 
-    /** The installed apps with a launcher entry, except DataBar. */
+    /** The apps the picker offers: those with a launcher entry that the tunnel can admit, and the blocked ones. */
     fun launchable(c: Context): List<App> {
-        val pm = c.packageManager
         val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        return pm.queryIntentActivities(launcher, 0)
-            .map { it.activityInfo.packageName }
+        return (c.packageManager.queryIntentActivities(launcher, 0).map { it.activityInfo.packageName } + admissible(c))
             .distinct()
-            .filter { it != c.packageName }
+            .filter { admits(c, it) }
             .map { App(it, UsageRepo.label(c, it)) }
     }
 
@@ -137,6 +157,22 @@ class BlockService : VpnService() {
 
     private var tun: ParcelFileDescriptor? = null
 
+    /** A blocked app installed again gets a new uid, which a running tunnel does not cover: rebuild. */
+    private val packages = object : BroadcastReceiver() {
+        override fun onReceive(c: Context, intent: Intent) {
+            if (intent.data?.schemeSpecificPart in AppBlock.blocked(c)) AppBlock.sync(c)
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        registerReceiver(packages, IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+        })
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // A null intent is a restart by Android after it killed the service: rebuild as for a start.
         if (intent?.action == ACTION_STOP) {
@@ -145,20 +181,16 @@ class BlockService : VpnService() {
         }
         // Foreground first: Android ends an app that is started this way and does not call it in time.
         try {
-            startForeground(AppBlock.NOTIFICATION, AppBlock.notification(this, 0))
+            startForeground(AppBlock.NOTIFICATION, AppBlock.notification(this, AppBlock.admissible(this).size))
         } catch (e: IllegalStateException) {
-            // Android 12+ can refuse a restart from the background; the next change or restart starts the block again.
-            stopSelf()
+            stopSelf() // a restart from the background that Android refused
             return START_NOT_STICKY
         }
-        val builder = Builder()
-        val n = AppBlock.configure(this, builder, AppBlock.blocked(this))
-        val fresh = if (n > 0 && AppBlock.enabled(this)) builder.establish() else null // null without consent
+        val fresh = AppBlock.establish(this, Builder())
         if (fresh == null) {
             stop()
             return START_NOT_STICKY
         }
-        startForeground(AppBlock.NOTIFICATION, AppBlock.notification(this, n))
         val old = tun
         tun = fresh
         drain(fresh)
@@ -185,11 +217,15 @@ class BlockService : VpnService() {
 
     /** Another VPN took over, or the user disconnected DataBar in Settings: the block switches off. */
     override fun onRevoke() {
-        AppBlock.save(this, false)
-        stop()
+        // Android can call this off the main thread, where it would race a rebuild over [tun].
+        Handler(Looper.getMainLooper()).post {
+            AppBlock.save(this, false)
+            stop()
+        }
     }
 
     override fun onDestroy() {
+        unregisterReceiver(packages)
         tun?.close()
         tun = null
         super.onDestroy()
@@ -205,6 +241,6 @@ class BlockService : VpnService() {
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
-        if (AppBlock.shouldRun(c)) AppBlock.sync(c)
+        if (AppBlock.enabled(c)) AppBlock.sync(c)
     }
 }

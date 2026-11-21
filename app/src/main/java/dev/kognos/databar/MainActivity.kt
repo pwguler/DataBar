@@ -259,6 +259,8 @@ class MainActivity : Activity() {
         }
         // A force stop cancels the background check; switching alerts on again schedules it when it is missing.
         if (FlagAlerts.enabled(this)) FlagAlerts.setEnabled(this, true)
+        // A force stop ends the tunnel, and a restored backup has no VPN consent: start it again, or switch off.
+        if (AppBlock.enabled(this)) AppBlock.sync(this)
         refresh()
         TileWidget.refreshAll(this)
     }
@@ -293,7 +295,7 @@ class MainActivity : Activity() {
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) setAlerts(true)
+        if (requestCode == 0 && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) setAlerts(true)
     }
 
     /** Switches the block. Switching on needs VPN consent: it asks Android, and finishes once the user allows it. */
@@ -305,6 +307,11 @@ class MainActivity : Activity() {
         }
         AppBlock.setEnabled(this, on)
         showBlock()
+        // The block runs without it, but Android 13+ shows its notification only once notifications are allowed.
+        val notifications = getSystemService(android.app.NotificationManager::class.java)
+        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notifications.areNotificationsEnabled()) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_BLOCK_NOTIFICATIONS)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -536,6 +543,7 @@ class MainActivity : Activity() {
         private const val MAX_ROWS = 15
         private const val KEY_ASKED = "asked_notifications"
         private const val REQUEST_VPN = 1
+        private const val REQUEST_BLOCK_NOTIFICATIONS = 2
 
         /**
          * The tap target of the widgets and the alerts: opens DataBar on a new screen, which shows today.
