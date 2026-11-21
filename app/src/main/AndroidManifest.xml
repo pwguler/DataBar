@@ -63,7 +63,7 @@
             android:name=".BlockActivity"
             android:exported="false"
             android:label="Block apps"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize|stateHidden" />
 
         <!-- specialUse, not systemExempted: systemExempted throws when DataBar is not the prepared VPN app. -->
         <service

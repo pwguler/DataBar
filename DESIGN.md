@@ -19,6 +19,7 @@ The theme's font, nothing bundled: the text styles inherit `TextAppearance.Devic
 | Role | Size | Weight | Color |
 |---|---|---|---|
 | Header label "DataBar" | 15sp | regular | `textColorSecondary` |
+| Screen title ("Block apps" on the picker) | 30sp | regular | `textColorPrimary` |
 | Total | 48sp | bold | `textColorPrimary` |
 | Total unit | 22sp | bold | `textColorSecondary` |
 | Summary line | 14sp | regular | `textColorSecondary` |
@@ -26,7 +27,7 @@ The theme's font, nothing bundled: the text styles inherit `TextAppearance.Devic
 | Settings label | 16sp | regular | `textColorPrimary` |
 | Settings value, row summary ("Last check Tue 14:32") | 14sp | regular | `textColorSecondary`; `signal` when access is missing |
 | Chip | 13sp | bold | `textColorSecondary`; selected: accent |
-| App name | 16sp | regular | `textColorPrimary` |
+| App name, picker search field | 16sp | regular | `textColorPrimary`; the search hint in `bar` |
 | App traffic line | 13sp | regular | `textColorPrimary` |
 | App baseline line | 12sp | regular | `textColorSecondary`; `signal` when flagged |
 | Widget title "DataBar" | 14sp | regular | `widget_title`, or `widget_title_dark_text` when the wallpaper prefers dark text |
@@ -61,11 +62,20 @@ All values in dp.
 
 - Header: sized to its text, with 32 above and 24 below. "DataBar", the total with its unit on one baseline, and the summary line, centered, 14 apart.
 - Blocks: 12 from the screen edges and 12 apart, corner radius 26, padding 20; the settings block has 4 above and below its rows. 24 below the last block.
-- Settings rows: Flag alerts, Include Wi-Fi and Usage access, each at least 56 tall, a 1dp `rule` between them. A row can show a summary under its label; the two lines keep 8 above and below. Tapping anywhere on a switch row toggles its switch.
+- Settings rows: Flag alerts, Include Wi-Fi, Usage access, Block apps and Blocked apps, each at least 56 tall, a 1dp `rule` between them. A row can show a summary under its label; the two lines keep 8 above and below. Tapping anywhere on a switch row toggles its switch.
 - Switch: a 40 x 22 pill, the accent when on and `bar` when off, with a 16 white dot 3 from the top and 2 from the end.
 - Apps block: the title, the chips 14 below it, then the rows 6 below the chips. Chips are 30 tall pills with 14 side padding, 8 apart, inside a 48 tall tap area. Selected chips are filled with the accent at 16% opacity; the others have a 1dp `rule` outline.
 - App rows: at least 12 above and below, a 28 icon (the system's generic app icon for traffic that is not an app), 12 to the name, and a 4 tall rounded share bar 10 below the text. Any share shows at least a round dot.
 - The whole screen scrolls, the header with it.
+
+## Picker
+
+"Blocked apps" opens the picker of the apps to block.
+
+- Title "Block apps", centered, 32 above and 24 below.
+- Search field: a block 56 tall at least, 20 side padding, "Search apps" as its hint.
+- The list: a block 12 below the search field, padding 20 at the sides and 4 at the top and bottom, as tall as its rows and at most down to 24 above the screen bottom. Only the list scrolls.
+- Rows: at least 56 tall, 12 above and below, a 28 icon, 12 to the name, and the theme's checkbox at the end. Tapping anywhere on a row ticks or unticks it. Blocked apps come first, then the others by name.
 
 ## Bars
 
@@ -94,6 +104,8 @@ Flag alerts post one notification for each flagged app, once a day per app, in t
 - Small icon: the three pill bars of the launcher icon, white on a 24 canvas.
 - Title: the app's name and "is uploading a lot". Text: "↑ 188 MB today · 5,5× its average · 62% in background", which expands to its full length.
 - Tapping it opens DataBar on today and removes the notification.
+
+The app block shows one ongoing notification while its VPN runs, in the channel "App block" at low importance, so it is silent and sits low in the panel: the same small icon, the title "Blocking 3 apps", and a tap opens the picker.
 
 ## Icon
 

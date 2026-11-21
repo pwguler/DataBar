@@ -57,8 +57,9 @@ class BlockActivity : Activity() {
             setHintTextColor(getColor(R.color.bar))
             background = blockBackground()
             setPadding(dp(20), 0, dp(20), 0)
-            minHeight = dp(56)
             isSingleLine = true
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(56) // the view's minimum: single-line mode resets the text's own minimum to one line
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -77,7 +78,7 @@ class BlockActivity : Activity() {
             adapter = this@BlockActivity.adapter
             setOnItemClickListener { _, _, position, _ -> toggle(shown[position]) }
         }
-        content.addView(list, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply { topMargin = dp(12) })
+        content.addView(list, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
 
         setContentView(content)
         reorder()
